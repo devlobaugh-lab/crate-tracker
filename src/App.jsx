@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react'
+import { AuthProvider, useAuth } from './AuthContext'
+import Login from './Login'
+import UserProfile from './UserProfile'
 
 const CRATE_TYPES = [
   { key: 'Green', color: 'bg-green-700', label: 'Green', value: 'B' },
@@ -115,27 +118,43 @@ function nextPatternValues(userInput, masterPattern) {
   return result;
 }
 
-function App() {
-  const [state, setState] = useState(() => {
-    const stored = loadFromStorage()
-    if (stored) return stored
-    return { allCrates: [], config: { wins: 0, gpWins: 0 } }
-  })
+// AppContent component that contains the main app logic
+function AppContent() {
+  const { currentUser, userData, saveUserData } = useAuth();
 
-  useEffect(() => saveToStorage(state), [state])
+  const [state, setState] = useState(() => {
+    // Use userData if available, otherwise fallback to localStorage
+    if (userData) return userData;
+    const stored = loadFromStorage();
+    return stored || { allCrates: [], config: { wins: 0, gpWins: 0 } };
+  });
+
+  // Update state when userData changes (from real-time listener)
+  useEffect(() => {
+    if (userData) {
+      setState(userData);
+    }
+  }, [userData]);
+
+  // Save state to both Firestore (if authenticated) and localStorage (as backup)
+  useEffect(() => {
+    if (state && state !== userData) {
+      saveUserData(state);
+      saveToStorage(state); // Keep localStorage as backup
+    }
+  }, [state, saveUserData, userData]);
 
   const lastTen = state.allCrates.slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
   const futureTen = nextPatternValues(state.allCrates, MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
 
   function addCrate(crateKey) {
-    const crateType = CRATE_TYPES.find(t => t.key === crateKey)
-    const crateValue = crateType ? crateType.value : '?'
-    const newAll = [...state.allCrates, crateValue]
-    const newConfig = { ...state.config }
-    newConfig.wins += 1
-    if (crateKey === 'GP') newConfig.gpWins += 1
-    // else newConfig.patternLocation += 1
-    setState({ ...state, allCrates: newAll, config: newConfig })
+    const crateType = CRATE_TYPES.find(t => t.key === crateKey);
+    const crateValue = crateType ? crateType.value : '?';
+    const newAll = [...state.allCrates, crateValue];
+    const newConfig = { ...state.config };
+    newConfig.wins += 1;
+    if (crateKey === 'GP') newConfig.gpWins += 1;
+    setState({ ...state, allCrates: newAll, config: newConfig });
   }
 
   function undoCrate() {
@@ -146,16 +165,19 @@ function App() {
     newConfig.wins -= 1;
     if (lastCrate === 'X') newConfig.gpWins -= 1;
     setState({ ...state, allCrates: newAllCrates, config: newConfig });
-  } 
+  }
 
-  const [view, setView] = useState('main')
+  const [view, setView] = useState('main');
+
+  if (!currentUser) {
+    return <Login />;
+  }
 
   return (
-  <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col justify-center">
+    <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col justify-center">
       <header className="flex items-center justify-between mb-8 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
         <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
-        {/* <button className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200" onClick={() => setView('config')}>Config</button> */}
       </header>
 
       {view === 'main' && (
@@ -169,13 +191,24 @@ function App() {
             <div className="text-sm text-gray-200 mb-4 font-semibold">Choose current crate</div>
             <div className="grid grid-cols-3 gap-4">
               {CRATE_TYPES.map(ct => (
-                  <button key={ct.key} onClick={() => addCrate(ct.key)} className={`p-3 rounded-lg shadow-md flex items-center justify-center transition-transform duration-150 hover:scale-105 hover:shadow-xl ${ct.color} ${ct.key === 'Unknown' ? 'border border-gray-400' : ''}`}>
-                    <span className={`font-semibold text-sm ${ct.value === '?' || ct.value === 'G' || ct.value === 'P' ? 'text-gray-800' : 'text-white'}`}>{ct.label}</span>
+                <button
+                  key={ct.key}
+                  onClick={() => addCrate(ct.key)}
+                  className={`p-3 rounded-lg shadow-md flex items-center justify-center transition-transform duration-150 hover:scale-105 hover:shadow-xl ${ct.color} ${ct.key === 'Unknown' ? 'border border-gray-400' : ''}`}
+                >
+                  <span className={`font-semibold text-sm ${ct.value === '?' || ct.value === 'G' || ct.value === 'P' ? 'text-gray-800' : 'text-white'}`}>
+                    {ct.label}
+                  </span>
                 </button>
               ))}
             </div>
             <div className="flex justify-end pt-8">
-              <button onClick={() => undoCrate()} className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold text-sm shadow hover:bg-red-900 transition-colors duration-200">Undo</button>
+              <button
+                onClick={() => undoCrate()}
+                className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold text-sm shadow hover:bg-red-900 transition-colors duration-200"
+              >
+                Undo
+              </button>
             </div>
           </section>
 
@@ -185,42 +218,75 @@ function App() {
           </section>
 
           <section className="mb-0 mt-6 text-center">
-             <button className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200" onClick={() => setView('config')}>Config</button>
+            <button
+              className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+              onClick={() => setView('config')}
+            >
+              Config
+            </button>
           </section>
         </main>
       )}
 
       {view === 'config' && (
-        <ConfigView config={state.config} onChange={(cfg, resetAllCrates) => {
-          if (resetAllCrates) {
-            setState(s => ({ ...s, allCrates: [], config: cfg }))
-          } else {
-            setState(s => ({ ...s, config: cfg }))
-          }
-        }} onBack={() => setView('main')} />
+        <ConfigView
+          config={state.config}
+          onChange={(cfg, resetAllCrates) => {
+            if (resetAllCrates) {
+              setState(s => ({ ...s, allCrates: [], config: cfg }));
+            } else {
+              setState(s => ({ ...s, config: cfg }));
+            }
+          }}
+          onBack={() => setView('main')}
+        />
       )}
 
-  <footer className="mt-8 text-xs text-gray-500 text-center">All data stored locally in your browser.</footer>
+      {/* User Profile Section - Bottom of App */}
+      <div className="mt-6 mb-4">
+        <UserProfile />
+      </div>
+
+      <footer className="text-xs text-gray-500 text-center">
+        {currentUser ? 'Data synced to your account' : 'All data stored locally in your browser.'}
+      </footer>
     </div>
-  )
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
 function ConfigView({ config, onChange, onBack }) {
-  const [local, setLocal] = useState(config)
+  const { currentUser, saveUserData } = useAuth();
+  const [local, setLocal] = useState(config);
 
-  useEffect(() => setLocal(config), [config])
+  useEffect(() => setLocal(config), [config]);
 
   function commit() {
-    onChange(local)
-    onBack()
+    onChange(local);
+    onBack();
   }
 
-  function reset() {
+  async function reset() {
+    const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
+
+    // Update both localStorage and Firestore if authenticated
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('crate-tracker:v1', JSON.stringify({ allCrates: [], config: { wins: 0, gpWins: 0 } }))
+      localStorage.setItem('crate-tracker:v1', JSON.stringify(resetData));
     }
-    onChange({ wins: 0, gpWins: 0 }, true)
-    onBack()
+
+    if (currentUser) {
+      await saveUserData(resetData);
+    }
+
+    onChange({ wins: 0, gpWins: 0 }, true);
+    onBack();
   }
 
   return (
