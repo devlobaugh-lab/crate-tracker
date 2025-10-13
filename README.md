@@ -3,8 +3,8 @@
 A simple mobile-first web app for tracking crate openings in a game. Stores data locally using `localStorage`.
 
 ## Features
-- Tracks all crate openings and shows last 6 and next 6 crates.
-- Config page for Wins, GP Wins, and Pattern Location.
+- Tracks all crate openings and shows last 10 and next 10 crates.
+- Config page for Wins and GP Wins
 - Persists data using `localStorage`.
 - Mobile-first responsive layout using TailwindCSS.
 - Dockerized for easy deployment.
