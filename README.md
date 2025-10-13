@@ -25,4 +25,5 @@ npm run build
 ```bash
 docker compose up --build
 ```
-Access app at http://localhost:3000
+Access app at http://localhost:3001
+
