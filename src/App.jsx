@@ -120,7 +120,7 @@ function nextPatternValues(userInput, masterPattern) {
 
 // AppContent component that contains the main app logic
 function AppContent() {
-  const { currentUser, userData, saveUserData } = useAuth();
+  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges } = useAuth();
 
   const [state, setState] = useState(() => {
     // Use userData if available, otherwise fallback to localStorage
@@ -138,16 +138,18 @@ function AppContent() {
 
   // Save state to both Firestore (if authenticated) and localStorage (as backup)
   useEffect(() => {
-    if (state && state !== userData) {
+    if (state) {
       saveUserData(state);
       saveToStorage(state); // Keep localStorage as backup
     }
-  }, [state, saveUserData, userData]);
+  }, [state, saveUserData]);
 
   const lastTen = state.allCrates.slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
   const futureTen = nextPatternValues(state.allCrates, MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
 
   function addCrate(crateKey) {
+    // Temporarily ignore remote changes to prevent sync loop
+    setIgnoreRemoteChanges(true);
     const crateType = CRATE_TYPES.find(t => t.key === crateKey);
     const crateValue = crateType ? crateType.value : '?';
     const newAll = [...state.allCrates, crateValue];
@@ -155,16 +157,24 @@ function AppContent() {
     newConfig.wins += 1;
     if (crateKey === 'GP') newConfig.gpWins += 1;
     setState({ ...state, allCrates: newAll, config: newConfig });
+
+    // Re-enable remote changes after a short delay
+    setTimeout(() => setIgnoreRemoteChanges(false), 100);
   }
 
   function undoCrate() {
     if (state.allCrates.length === 0) return; // Nothing to undo
+    // Temporarily ignore remote changes to prevent sync loop
+    setIgnoreRemoteChanges(true);
     const lastCrate = state.allCrates[state.allCrates.length - 1];
     const newAllCrates = state.allCrates.slice(0, -1);
     const newConfig = { ...state.config };
     newConfig.wins -= 1;
     if (lastCrate === 'X') newConfig.gpWins -= 1;
     setState({ ...state, allCrates: newAllCrates, config: newConfig });
+
+    // Re-enable remote changes after a short delay
+    setTimeout(() => setIgnoreRemoteChanges(false), 100);
   }
 
   const [view, setView] = useState('main');
@@ -232,13 +242,18 @@ function AppContent() {
         <ConfigView
           config={state.config}
           onChange={(cfg, resetAllCrates) => {
+            // Temporarily ignore remote changes to prevent sync loop
+            setIgnoreRemoteChanges(true);
             if (resetAllCrates) {
               setState(s => ({ ...s, allCrates: [], config: cfg }));
             } else {
               setState(s => ({ ...s, config: cfg }));
             }
+            // Re-enable remote changes after a short delay
+            setTimeout(() => setIgnoreRemoteChanges(false), 100);
           }}
           onBack={() => setView('main')}
+          setIgnoreRemoteChanges={setIgnoreRemoteChanges}
         />
       )}
 
@@ -262,7 +277,7 @@ function App() {
   );
 }
 
-function ConfigView({ config, onChange, onBack }) {
+function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
   const { currentUser, saveUserData } = useAuth();
   const [local, setLocal] = useState(config);
 
@@ -285,8 +300,13 @@ function ConfigView({ config, onChange, onBack }) {
       await saveUserData(resetData);
     }
 
+    // Temporarily ignore remote changes to prevent sync loop
+    setIgnoreRemoteChanges(true);
     onChange({ wins: 0, gpWins: 0 }, true);
     onBack();
+
+    // Re-enable remote changes after a short delay
+    setTimeout(() => setIgnoreRemoteChanges(false), 100);
   }
 
   return (
