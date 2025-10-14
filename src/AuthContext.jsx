@@ -74,11 +74,16 @@ export function AuthProvider({ children }) {
 
   // Save user data to Firestore
   async function saveUserData(userId, data) {
+    // console.log('saveUserData called with:', { userId, data });
     try {
       const userDocRef = doc(db, 'users', userId);
+      // console.log('Attempting to save to Firestore path: users/' + userId);
       await setDoc(userDocRef, data, { merge: true });
+      // console.log('Firestore save successful');
     } catch (error) {
-      console.error('Error saving user data:', error);
+      console.error('Error saving user data to Firestore:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       // Fallback to localStorage if Firestore fails
       saveToLocalStorage(data);
     }
