@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
+  const [ignoreRemoteChanges, setIgnoreRemoteChanges] = useState(false);
 
   // Google sign in
   async function signInWithGoogle() {
@@ -142,7 +143,7 @@ export function AuthProvider({ children }) {
 
     const userDocRef = doc(db, 'users', currentUser.uid);
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
-      if (doc.exists()) {
+      if (doc.exists() && !ignoreRemoteChanges) {
         setUserData(doc.data());
       }
     }, (error) => {
@@ -150,7 +151,7 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
-  }, [currentUser]);
+  }, [currentUser, ignoreRemoteChanges]);
 
   const value = {
     currentUser,
@@ -160,7 +161,8 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     logout,
     saveUserData: currentUser ? (data) => saveUserData(currentUser.uid, data) : saveToLocalStorage,
-    loadUserData: currentUser ? () => loadUserData(currentUser.uid) : loadFromLocalStorage
+    loadUserData: currentUser ? () => loadUserData(currentUser.uid) : loadFromLocalStorage,
+    setIgnoreRemoteChanges
   };
 
   return (
