@@ -13,9 +13,22 @@ const firebaseConfig = {
   appId: "1:737369389543:web:68bbf2447e415aa9786542"
 };
 
+// // Debug logging for Firebase configuration
+// console.log('Firebase config loaded:', {
+//   projectId: firebaseConfig.projectId,
+//   authDomain: firebaseConfig.authDomain,
+//   apiKey: firebaseConfig.apiKey ? '[API_KEY_PRESENT]' : '[NO_API_KEY]'
+// });
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 export const googleProvider = new GoogleAuthProvider();
 
+// Test Firestore connection
+// try {
+//   console.log('Firestore instance created successfully');
+// } catch (error) {
+//   console.error('Failed to create Firestore instance:', error);
+// }

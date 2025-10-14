@@ -138,11 +138,11 @@ function AppContent() {
 
   // Save state to both Firestore (if authenticated) and localStorage (as backup)
   useEffect(() => {
-    if (state) {
+    if (state && currentUser) {
       saveUserData(state);
       saveToStorage(state); // Keep localStorage as backup
     }
-  }, [state, saveUserData]);
+  }, [state, saveUserData, currentUser]);
 
   const lastTen = state.allCrates.slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
   const futureTen = nextPatternValues(state.allCrates, MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
@@ -289,24 +289,42 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
   }
 
   async function reset() {
+    // console.log('Reset function called, currentUser:', currentUser);
+
+    // Temporarily ignore remote changes to prevent sync loop
+    setIgnoreRemoteChanges(true);
+
     const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
+    // console.log('Reset data prepared:', resetData);
 
     // Update both localStorage and Firestore if authenticated
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('crate-tracker:v1', JSON.stringify(resetData));
+      // console.log('localStorage updated');
     }
 
     if (currentUser) {
-      await saveUserData(resetData);
+      // console.log('Saving to Firestore...');
+      try {
+        await saveUserData(resetData);
+        // console.log('Firestore save completed successfully');
+      } catch (error) {
+        console.error('Firestore save failed:', error);
+      }
+    } else {
+      console.log('No current user, skipping Firestore save');
     }
 
-    // Temporarily ignore remote changes to prevent sync loop
-    setIgnoreRemoteChanges(true);
+    // Update state and navigate back
+    // console.log('Calling onChange with reset data');
     onChange({ wins: 0, gpWins: 0 }, true);
     onBack();
 
-    // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 100);
+    // Re-enable remote changes after a longer delay to ensure all operations complete
+    setTimeout(() => {
+      console.log('Re-enabling remote changes');
+      setIgnoreRemoteChanges(false);
+    }, 200);
   }
 
   return (
