@@ -129,6 +129,62 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, [currentUser, ignoreRemoteChanges]);
 
+  // Export user data to file
+  function exportUserData() {
+    if (!userData) {
+      throw new Error('No user data to export');
+    }
+
+    const exportData = {
+      allCrates: userData.allCrates,
+      config: userData.config,
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `crate-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Import user data from file
+  function importUserData(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importedData = JSON.parse(e.target.result);
+
+          // Validate the imported data structure
+          if (!importedData.allCrates || !Array.isArray(importedData.allCrates) ||
+              !importedData.config || typeof importedData.config !== 'object') {
+            throw new Error('Invalid file format');
+          }
+
+          // Merge with current data or replace completely
+          const mergedData = {
+            allCrates: importedData.allCrates,
+            config: {
+              wins: importedData.config.wins || 0,
+              gpWins: importedData.config.gpWins || 0
+            }
+          };
+
+          resolve(mergedData);
+        } catch (error) {
+          reject(new Error('Failed to parse file: ' + error.message));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  }
+
   const value = {
     currentUser,
     userData,
@@ -138,7 +194,9 @@ export function AuthProvider({ children }) {
     logout,
     saveUserData: currentUser ? (data) => saveUserData(currentUser.uid, data) : () => console.warn('Cannot save data - no authenticated user'),
     loadUserData: currentUser ? () => loadUserData(currentUser.uid) : () => ({ allCrates: [], config: { wins: 0, gpWins: 0 } }),
-    setIgnoreRemoteChanges
+    setIgnoreRemoteChanges,
+    exportUserData,
+    importUserData
   };
 
   return (
