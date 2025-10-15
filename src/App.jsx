@@ -155,7 +155,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col justify-center">
+    <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col">
       <header className="flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
         <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
