@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import Login from './Login'
 import UserProfile from './UserProfile'
+import { ArrowUturnLeftIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
 
 const CRATE_TYPES = [
   { key: 'Green', color: 'bg-green-700', label: 'Green', value: 'B' },
@@ -155,10 +156,18 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col justify-center">
-      <header className="flex items-center justify-between mb-6 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
+      <header className="flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
         <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
       </header>
+      <div className="flex justify-end pr-2 mb-2">
+        <button
+          className="pl-2 text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+          onClick={() => setView('config')}
+          >
+          <Cog6ToothIcon className="w-5 h-5" />
+        </button>
+      </div>
 
       {view === 'main' && (
         <main>
@@ -167,14 +176,14 @@ function AppContent() {
             <SmallRow crates={lastTen} />
           </section>
 
-          <section className="mb-4 bg-gray-700 p-6 rounded-2xl shadow-lg">
+          <section className="mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg">
             <div className="text-sm text-gray-200 mb-4 font-semibold flex justify-between items-center">
               <div>Choose current crate</div>
               <div><button
                 onClick={() => undoCrate()}
-                className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+                className="text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200"
               >
-                Undo
+                <ArrowUturnLeftIcon className="w-6 h-6" />
               </button></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -190,14 +199,7 @@ function AppContent() {
                 </button>
               ))}
             </div>
-            <div className="flex justify-end pt-6">
-              <button
-                className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
-                onClick={() => setView('config')}
-              >
-                Config
-              </button>
-            </div>
+            
             {/* <div className="flex justify-end pt-8">
               <button
                 onClick={() => undoCrate()}
@@ -304,7 +306,9 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
     // Update state and navigate back
     // console.log('Calling onChange with reset data');
     onChange({ wins: 0, gpWins: 0 }, true);
-    onBack();
+    // onBack();
+    setImportStatus('All Data reset successfully!');
+    setTimeout(() => setImportStatus(''), 3000);
 
     // Re-enable remote changes after a longer delay to ensure all operations complete
     setTimeout(() => {
@@ -375,12 +379,12 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
 
       <div className="flex gap-4">
         <button onClick={commit} className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
-        {/* <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-500 text-gray-300 font-semibold shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button> */}
-        <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button>
+        <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-500 bg-gray-600 text-gray-300 font-semibold shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+        {/* <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button> */}
       </div>
       <div className="mt-8">
         <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-2">
           <button
             onClick={handleExport}
             className="py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200"
@@ -396,6 +400,12 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
               className="hidden"
             />
           </label>
+          <button 
+            onClick={reset} 
+            className="py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200">
+              Reset All Values
+          </button>
+      
         </div>
         {importStatus && (
           <div className={`text-sm p-2 rounded-lg text-center ${importStatus.includes('failed') || importStatus.includes('Failed') ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
