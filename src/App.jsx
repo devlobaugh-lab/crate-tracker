@@ -211,10 +211,14 @@ function AppContent() {
       {view === 'config' && (
         <ConfigView
           config={state.config}
-          onChange={(cfg, resetAllCrates) => {
+          allCrates={state.allCrates}
+          onChange={(cfg, resetAllCrates, importData) => {
             // Temporarily ignore remote changes to prevent sync loop
             setIgnoreRemoteChanges(true);
-            if (resetAllCrates) {
+            if (importData) {
+              // Handle import case - restore complete state
+              setState(importData);
+            } else if (resetAllCrates) {
               setState(s => ({ ...s, allCrates: [], config: cfg }));
             } else {
               setState(s => ({ ...s, config: cfg }));
@@ -248,8 +252,9 @@ function App() {
 }
 
 function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
-  const { currentUser, saveUserData } = useAuth();
+  const { currentUser, saveUserData, exportUserData, importUserData } = useAuth();
   const [local, setLocal] = useState(config);
+  const [importStatus, setImportStatus] = useState('');
 
   useEffect(() => setLocal(config), [config]);
 
@@ -292,6 +297,48 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
     }, 200);
   }
 
+  async function handleExport() {
+    try {
+      await exportUserData();
+      setImportStatus('Data exported successfully!');
+      setTimeout(() => setImportStatus(''), 3000);
+    } catch (error) {
+      setImportStatus('Export failed: ' + error.message);
+      setTimeout(() => setImportStatus(''), 3000);
+    }
+  }
+
+  async function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      setImportStatus('Importing...');
+      const importedData = await importUserData(file);
+
+      // Prepare the complete state data for import
+      const completeImportData = {
+        allCrates: importedData.allCrates,
+        config: {
+          wins: importedData.config.wins || 0,
+          gpWins: importedData.config.gpWins || 0
+        }
+      };
+
+      // Use onChange with importData parameter to restore complete state
+      onChange(null, false, completeImportData);
+
+      setImportStatus('Data imported successfully!');
+      setTimeout(() => setImportStatus(''), 3000);
+    } catch (error) {
+      setImportStatus('Import failed: ' + error.message);
+      setTimeout(() => setImportStatus(''), 3000);
+    }
+
+    // Clear the input
+    event.target.value = '';
+  }
+
   return (
   <div className="bg-gray-700 p-6 rounded-2xl shadow-lg">
       <div className="flex items-center justify-between mb-6">
@@ -309,10 +356,36 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
         <input type="number" value={local.gpWins} onChange={e => setLocal({...local, gpWins: Number(e.target.value)})} className="mt-2 w-full p-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </label>
 
+
       <div className="flex gap-4">
         <button onClick={commit} className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
         {/* <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-500 text-gray-300 font-semibold shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button> */}
         <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button>
+      </div>
+      <div className="mt-8">
+        <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={handleExport}
+            className="py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200"
+          >
+            Export Data
+          </button>
+          <label className="py-2 px-3 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow hover:bg-purple-700 transition-colors duration-200 cursor-pointer text-center">
+            Import Data
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </label>
+        </div>
+        {importStatus && (
+          <div className={`text-sm p-2 rounded-lg text-center ${importStatus.includes('failed') || importStatus.includes('Failed') ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+            {importStatus}
+          </div>
+        )}
       </div>
     </div>
   )
