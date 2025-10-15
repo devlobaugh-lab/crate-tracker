@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
       // Fallback to localStorage if Firestore fails
-      saveToLocalStorage(data);
+      // saveToLocalStorage(data);
     }
   }
 
