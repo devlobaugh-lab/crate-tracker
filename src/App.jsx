@@ -155,20 +155,28 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col justify-center">
-      <header className="flex items-center justify-between mb-8 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
+      <header className="flex items-center justify-between mb-6 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
         <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
       </header>
 
       {view === 'main' && (
         <main>
-          <section className="mb-8">
+          <section className="mb-4">
             <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Last 10 crates</div>
             <SmallRow crates={lastTen} />
           </section>
 
-          <section className="mb-8 bg-gray-700 p-6 rounded-2xl shadow-lg">
-            <div className="text-sm text-gray-200 mb-4 font-semibold">Choose current crate</div>
+          <section className="mb-4 bg-gray-700 p-6 rounded-2xl shadow-lg">
+            <div className="text-sm text-gray-200 mb-4 font-semibold flex justify-between items-center">
+              <div>Choose current crate</div>
+              <div><button
+                onClick={() => undoCrate()}
+                className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+              >
+                Undo
+              </button></div>
+            </div>
             <div className="grid grid-cols-3 gap-4">
               {CRATE_TYPES.map(ct => (
                 <button
@@ -182,29 +190,37 @@ function AppContent() {
                 </button>
               ))}
             </div>
-            <div className="flex justify-end pt-8">
+            <div className="flex justify-end pt-6">
+              <button
+                className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+                onClick={() => setView('config')}
+              >
+                Config
+              </button>
+            </div>
+            {/* <div className="flex justify-end pt-8">
               <button
                 onClick={() => undoCrate()}
                 className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold text-sm shadow hover:bg-red-900 transition-colors duration-200"
               >
                 Undo
               </button>
-            </div>
+            </div> */}
           </section>
 
-          <section className="mb-6">
+          <section className="mb-2">
             <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
             <SmallRow crates={futureTen} />
           </section>
 
-          <section className="mb-0 mt-6 text-center">
+          {/* <section className="mb-0 mt-6 text-center">
             <button
               className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
               onClick={() => setView('config')}
             >
               Config
             </button>
-          </section>
+          </section> */}
         </main>
       )}
 
