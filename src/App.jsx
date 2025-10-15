@@ -26,24 +26,7 @@ const STORAGE_KEY = 'crate-tracker:v1'
 
 const APP_VERSION = '1.0.1'
 
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw)
-  } catch (e) {
-    console.error('Failed to read localStorage', e)
-    return null
-  }
-}
-
-function saveToStorage(state) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch (e) {
-    console.error('Failed to write localStorage', e)
-  }
-}
+// Removed localStorage functions - using only Firestore now
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -112,10 +95,9 @@ function AppContent() {
   const { currentUser, userData, saveUserData, setIgnoreRemoteChanges } = useAuth();
 
   const [state, setState] = useState(() => {
-    // Use userData if available, otherwise fallback to localStorage
+    // Use userData if available, otherwise use default empty state
     if (userData) return userData;
-    const stored = loadFromStorage();
-    return stored || { allCrates: [], config: { wins: 0, gpWins: 0 } };
+    return { allCrates: [], config: { wins: 0, gpWins: 0 } };
   });
 
   // Update state when userData changes (from real-time listener)
@@ -125,11 +107,10 @@ function AppContent() {
     }
   }, [userData]);
 
-  // Save state to both Firestore (if authenticated) and localStorage (as backup)
+  // Save state to Firestore only (no localStorage backup)
   useEffect(() => {
     if (state && currentUser) {
       saveUserData(state);
-      saveToStorage(state); // Keep localStorage as backup
     }
   }, [state, saveUserData, currentUser]);
 
@@ -252,7 +233,7 @@ function AppContent() {
       </div>
 
       <footer className="text-xs text-gray-500 text-center">
-        {currentUser ? 'Data synced to your account' : 'All data stored locally in your browser.'}
+        {currentUser ? 'Data synced to your account' : 'Sign in to save your data to the cloud'}
       </footer>
     </div>
   );
@@ -286,22 +267,17 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
     const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
     // console.log('Reset data prepared:', resetData);
 
-    // Update both localStorage and Firestore if authenticated
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('crate-tracker:v1', JSON.stringify(resetData));
-      // console.log('localStorage updated');
-    }
-
+    // Only save to Firestore (no localStorage)
     if (currentUser) {
-      // console.log('Saving to Firestore...');
+      console.log('Saving reset data to Firestore...');
       try {
         await saveUserData(resetData);
-        // console.log('Firestore save completed successfully');
+        console.log('Firestore reset save completed successfully');
       } catch (error) {
-        console.error('Firestore save failed:', error);
+        console.error('Firestore reset save failed:', error);
       }
     } else {
-      console.log('No current user, skipping Firestore save');
+      console.log('No current user, cannot reset data');
     }
 
     // Update state and navigate back
