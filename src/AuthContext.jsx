@@ -67,8 +67,8 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
-      // Fallback to localStorage if Firestore fails
-      return loadFromLocalStorage();
+      // Return default data if Firestore fails (no localStorage fallback)
+      return { allCrates: [], config: { wins: 0, gpWins: 0 } };
     }
   }
 
@@ -89,24 +89,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // LocalStorage fallback functions
-  function loadFromLocalStorage() {
-    try {
-      const raw = localStorage.getItem('crate-tracker:v1');
-      return raw ? JSON.parse(raw) : { allCrates: [], config: { wins: 0, gpWins: 0 } };
-    } catch (e) {
-      console.error('Failed to read localStorage', e);
-      return { allCrates: [], config: { wins: 0, gpWins: 0 } };
-    }
-  }
-
-  function saveToLocalStorage(state) {
-    try {
-      localStorage.setItem('crate-tracker:v1', JSON.stringify(state));
-    } catch (e) {
-      console.error('Failed to write localStorage', e);
-    }
-  }
+  // Removed localStorage functions - using only Firestore now
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -118,19 +101,7 @@ export function AuthProvider({ children }) {
         // User is signed in, load their data
         const data = await loadUserData(user.uid);
 
-        // Check if this is a new user and migrate localStorage data
-        if (data && data.allCrates.length === 0 && data.config.wins === 0 && data.config.gpWins === 0) {
-          const localData = loadFromLocalStorage();
-          if (localData && (localData.allCrates.length > 0 || localData.config.wins > 0)) {
-            // Migrate localStorage data to Firestore
-            await saveUserData(user.uid, localData);
-            setUserData(localData);
-          } else {
-            setUserData(data);
-          }
-        } else {
-          setUserData(data);
-        }
+        setUserData(data);
       } else {
         // User is signed out, clear data
         setUserData(null);
@@ -165,8 +136,8 @@ export function AuthProvider({ children }) {
     authLoading,
     signInWithGoogle,
     logout,
-    saveUserData: currentUser ? (data) => saveUserData(currentUser.uid, data) : saveToLocalStorage,
-    loadUserData: currentUser ? () => loadUserData(currentUser.uid) : loadFromLocalStorage,
+    saveUserData: currentUser ? (data) => saveUserData(currentUser.uid, data) : () => console.warn('Cannot save data - no authenticated user'),
+    loadUserData: currentUser ? () => loadUserData(currentUser.uid) : () => ({ allCrates: [], config: { wins: 0, gpWins: 0 } }),
     setIgnoreRemoteChanges
   };
 
