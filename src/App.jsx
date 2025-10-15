@@ -12,8 +12,6 @@ const CRATE_TYPES = [
   { key: 'Unknown', color: 'bg-white', label: 'Unknown', value: '?'}
 ]
 
-const STORAGE_KEY = 'crate-tracker:v1'
-
 const MASTER_PATTERN = `BBBBBBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBGBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBG
 BBBGBBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBLBBGBBBGBBBBGBGBBBBGBBBBGBBG
 BBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL
@@ -23,6 +21,10 @@ BBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL
 BBBBBBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBGBBBBBPBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBB
 GBBBGBBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBLBBGBBBGBBBBGBGBBBBGBBBBGBB
 GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL`;
+
+const STORAGE_KEY = 'crate-tracker:v1'
+
+const APP_VERSION = '1.0.1'
 
 function loadFromStorage() {
   try {
@@ -43,25 +45,12 @@ function saveToStorage(state) {
   }
 }
 
-// function SmallRow({ crates = [] }) {
-//   return (
-//     <div className="flex gap-2 justify-center">
-//       {/* {crates.toString()} */}
-//       {crates.map((c, i) => (
-//         <div key={i} className={`w-8 h-8 rounded-none shadow-lg border ${c.color}`}></div>
-//       ))}
-//     </div>
-//   )
-// }
-
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
     return <div className="text-center text-gray-400 italic py-1">No data</div>
   } else {
     return (
       <div className="flex gap-2 justify-center">
-      
-
         {crates.map((c, i) => (
           <div key={i} className={`w-8 h-8 rounded-none shadow-lg border ${c.color}`}></div>
         ))}
