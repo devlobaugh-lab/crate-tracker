@@ -360,20 +360,20 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
   }
 
   return (
-  <div className="bg-gray-700 p-6 rounded-2xl shadow-lg">
-      <div className="flex items-center justify-between mb-6">
+  <div className="bg-gray-700 px-6 py-4 rounded-2xl shadow-lg">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-white tracking-wide">Config</h2>
         <button className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200" onClick={onBack}>Back</button>
       </div>
 
       <label className="block mb-4">
         <div className="text-xs text-gray-300 font-semibold">Number of wins</div>
-        <input type="number" value={local.wins} onChange={e => setLocal({...local, wins: Number(e.target.value)})} className="mt-2 w-full p-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input type="number" value={local.wins} onChange={e => setLocal({...local, wins: Number(e.target.value)})} className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </label>
 
       <label className="block mb-4">
         <div className="text-xs text-gray-300 font-semibold">GP wins</div>
-        <input type="number" value={local.gpWins} onChange={e => setLocal({...local, gpWins: Number(e.target.value)})} className="mt-2 w-full p-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input type="number" value={local.gpWins} onChange={e => setLocal({...local, gpWins: Number(e.target.value)})} className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
       </label>
 
 
@@ -382,7 +382,7 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
         <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-500 bg-gray-600 text-gray-300 font-semibold shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
         {/* <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button> */}
       </div>
-      <div className="mt-8">
+      <div className="mt-6">
         <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
         <div className="grid grid-cols-2 gap-3 mb-2">
           <button
