@@ -378,8 +378,8 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
 
 
       <div className="flex gap-4">
-        <button onClick={commit} className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
-        <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-500 bg-gray-600 text-gray-300 font-semibold shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+        <button onClick={commit} className="flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
+        <button onClick={onBack} className="flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
         {/* <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button> */}
       </div>
       <div className="mt-6">
