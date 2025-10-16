@@ -80,22 +80,15 @@ export function AuthProvider({ children }) {
 
   // Save user data to Firestore
   async function saveUserData(userId, data) {
-    // console.log('saveUserData called with:', { userId, data });
     try {
       const userDocRef = doc(db, 'users', userId);
-      // console.log('Attempting to save to Firestore path: users/' + userId);
       await setDoc(userDocRef, data, { merge: true });
-      // console.log('Firestore save successful');
     } catch (error) {
       console.error('Error saving user data to Firestore:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      // Fallback to localStorage if Firestore fails
-      // saveToLocalStorage(data);
     }
   }
-
-  // Removed localStorage functions - using only Firestore now
 
   // Session management functions
   async function createSession(userId) {
@@ -208,7 +201,7 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
-  }, []); // Remove currentSessionId dependency to avoid circular issues
+  }, []); 
 
   // Set up real-time listener for user data changes
   useEffect(() => {
@@ -273,7 +266,7 @@ export function AuthProvider({ children }) {
       });
 
       return unsubscribe;
-    }, 1000); // Wait 1 second before starting monitoring
+    }, 2000); // Wait 2 seconds before starting monitoring
 
     return () => clearTimeout(monitoringTimeout);
   }, [currentUser, currentSessionId]);
