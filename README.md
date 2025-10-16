@@ -19,6 +19,7 @@ Data Storage and Auth services provided by Firebase
 - User is only allowed to be logged into one device at a time (it will log you out of others)
 - Mobile-first responsive layout using TailwindCSS.
 - Dockerized for easy deployment.
+- Setup to be hosted on Firebase as well. 
 
 ## Setup
 
@@ -50,7 +51,14 @@ App runs at http://localhost:5173
 npm run build
 ```
 
-## Docker
+## Firebase Deployment
+```bash
+cd <directory of this app>
+firebase login
+firebase deploy --only hosting
+```
+
+## Docker Deployment 
 ### Run locally with Docker Compose
 ```bash
 docker compose up --build
