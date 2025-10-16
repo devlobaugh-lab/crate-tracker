@@ -27,8 +27,6 @@ const STORAGE_KEY = 'crate-tracker:v1'
 
 const APP_VERSION = '1.0.1'
 
-// Removed localStorage functions - using only Firestore now
-
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
     return <div className="text-center text-gray-400 italic py-1">No data</div>
@@ -108,7 +106,7 @@ function AppContent() {
     }
   }, [userData]);
 
-  // Save state to Firestore only (no localStorage backup)
+  // Save state to Firestore 
   useEffect(() => {
     if (state && currentUser) {
       saveUserData(state);
@@ -130,7 +128,7 @@ function AppContent() {
     setState({ ...state, allCrates: newAll, config: newConfig });
 
     // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 100);
+    setTimeout(() => setIgnoreRemoteChanges(false), 200);
   }
 
   function undoCrate() {
@@ -145,7 +143,7 @@ function AppContent() {
     setState({ ...state, allCrates: newAllCrates, config: newConfig });
 
     // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 100);
+    setTimeout(() => setIgnoreRemoteChanges(false), 200);
   }
 
   const [view, setView] = useState('main');
@@ -199,30 +197,12 @@ function AppContent() {
                 </button>
               ))}
             </div>
-            
-            {/* <div className="flex justify-end pt-8">
-              <button
-                onClick={() => undoCrate()}
-                className="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold text-sm shadow hover:bg-red-900 transition-colors duration-200"
-              >
-                Undo
-              </button>
-            </div> */}
           </section>
 
           <section className="mb-2">
             <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
             <SmallRow crates={futureTen} />
           </section>
-
-          {/* <section className="mb-0 mt-6 text-center">
-            <button
-              className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
-              onClick={() => setView('config')}
-            >
-              Config
-            </button>
-          </section> */}
         </main>
       )}
 
@@ -242,7 +222,7 @@ function AppContent() {
               setState(s => ({ ...s, config: cfg }));
             }
             // Re-enable remote changes after a short delay
-            setTimeout(() => setIgnoreRemoteChanges(false), 100);
+            setTimeout(() => setIgnoreRemoteChanges(false), 200);
           }}
           onBack={() => setView('main')}
           setIgnoreRemoteChanges={setIgnoreRemoteChanges}
@@ -282,20 +262,15 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
   }
 
   async function reset() {
-    // console.log('Reset function called, currentUser:', currentUser);
-
     // Temporarily ignore remote changes to prevent sync loop
     setIgnoreRemoteChanges(true);
 
     const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
-    // console.log('Reset data prepared:', resetData);
 
-    // Only save to Firestore (no localStorage)
+    // Save to Firestore
     if (currentUser) {
-      console.log('Saving reset data to Firestore...');
       try {
         await saveUserData(resetData);
-        console.log('Firestore reset save completed successfully');
       } catch (error) {
         console.error('Firestore reset save failed:', error);
       }
@@ -304,9 +279,7 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
     }
 
     // Update state and navigate back
-    // console.log('Calling onChange with reset data');
     onChange({ wins: 0, gpWins: 0 }, true);
-    // onBack();
     setImportStatus('All Data reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
 
@@ -380,7 +353,6 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
       <div className="flex gap-4">
         <button onClick={commit} className="flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
         <button onClick={onBack} className="flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
-        {/* <button onClick={reset} className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition-colors duration-200">Reset All Values</button> */}
       </div>
       <div className="mt-6">
         <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
