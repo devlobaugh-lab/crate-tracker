@@ -21,6 +21,24 @@ Data Storage and Auth services provided by Firebase
 - Dockerized for easy deployment.
 
 ## Setup
+
+### Environment Variables
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and replace the placeholder values with your actual Firebase configuration:
+   ```bash
+   VITE_FIREBASE_API_KEY=your_actual_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   ```
+
+### Local Development
 ```bash
 npm install
 npm run dev
@@ -55,3 +73,22 @@ docker push ghcr.io/devlobaugh-lab/crate-tracker/crate-tracker:latest
 
 Access docker version of app at http://localhost:3001 (unless docker compose is setup differently)
 
+### Production Deployment with Environment Variables
+
+For production deployment, set the following environment variables:
+
+```bash
+export VITE_FIREBASE_API_KEY="your_production_api_key"
+export VITE_FIREBASE_AUTH_DOMAIN="your_project.firebaseapp.com"
+export VITE_FIREBASE_PROJECT_ID="your_project_id"
+export VITE_FIREBASE_STORAGE_BUCKET="your_project.appspot.com"
+export VITE_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
+export VITE_FIREBASE_APP_ID="your_app_id"
+```
+
+Then run:
+```bash
+docker compose up --build
+```
+
+Or use a `.env` file in your production environment and ensure it's not committed to version control.
