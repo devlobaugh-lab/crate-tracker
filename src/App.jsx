@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.0.1'
+const APP_VERSION = '1.1.2'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -234,8 +234,13 @@ function AppContent() {
         <UserProfile />
       </div>
 
-      <footer className="text-xs text-gray-500 text-center">
-        {currentUser ? 'Data synced to your account' : 'Sign in to save your data to the cloud'}
+      <footer className="flex text-xs text-gray-500 items-center justify-between">
+        <div>
+          {currentUser ? 'Data synced to your account' : 'Sign in to save your data to the cloud'}
+        </div>
+        <div>
+          App version {APP_VERSION}
+        </div>
       </footer>
     </div>
   );
