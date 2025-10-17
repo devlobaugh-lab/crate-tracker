@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db, googleProvider } from './firebase';
+import { auth, db, googleProvider, checkNetworkStatus } from './firebase';
 
 const AuthContext = createContext();
 
@@ -20,6 +20,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [ignoreRemoteChanges, setIgnoreRemoteChanges] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced', 'syncing', 'pending', 'error'
+  const [actionQueue, setActionQueue] = useState([]);
 
   // Google sign in
   async function signInWithGoogle() {
@@ -72,22 +75,90 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Save user data to Firestore
-  async function saveUserData(userId, data) {
-    // console.log('saveUserData called with:', { userId, data });
+  // Enhanced save user data with offline support and retry logic
+  async function saveUserData(userId, data, retryCount = 0) {
+    const maxRetries = 3;
+    const retryDelay = 1000 * Math.pow(2, retryCount); // Exponential backoff
+
     try {
       const userDocRef = doc(db, 'users', userId);
-      // console.log('Attempting to save to Firestore path: users/' + userId);
       await setDoc(userDocRef, data, { merge: true });
-      // console.log('Firestore save successful');
+      setSyncStatus('synced');
+      console.log('Firestore save successful');
     } catch (error) {
       console.error('Error saving user data to Firestore:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      // Fallback to localStorage if Firestore fails
-      // saveToLocalStorage(data);
+
+      // Check if it's a network-related error
+      const isNetworkError = error.code === 'unavailable' ||
+                           error.code === 'deadline-exceeded' ||
+                           error.code === 'cancelled' ||
+                           error.message?.includes('network');
+
+      if (isNetworkError && retryCount < maxRetries) {
+        setSyncStatus('pending');
+        console.log(`Retrying save operation in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+
+        setTimeout(() => {
+          saveUserData(userId, data, retryCount + 1);
+        }, retryDelay);
+      } else {
+        // For non-network errors or max retries reached, treat as offline
+        setIsOnline(false);
+        setSyncStatus('error');
+        console.error('Save failed after retries or due to non-network error:', error.message);
+
+        // Queue the action for later when back online
+        queueAction('save', { userId, data });
+      }
     }
   }
+
+  // Action queue for offline operations
+  function queueAction(type, payload) {
+    const action = {
+      id: Date.now() + Math.random(),
+      type,
+      payload,
+      timestamp: new Date().toISOString()
+    };
+
+    setActionQueue(prev => [...prev, action]);
+    console.log('Action queued:', action);
+  }
+
+  // Process queued actions when back online
+  async function processActionQueue() {
+    if (actionQueue.length === 0) return;
+
+    setSyncStatus('syncing');
+    const actionsToProcess = [...actionQueue];
+    setActionQueue([]);
+
+    for (const action of actionsToProcess) {
+      try {
+        switch (action.type) {
+          case 'save':
+            await saveUserData(action.payload.userId, action.payload.data);
+            break;
+          default:
+            console.warn('Unknown action type:', action.type);
+        }
+      } catch (error) {
+        console.error('Failed to process queued action:', error);
+        // Re-queue if it fails
+        setActionQueue(prev => [...prev, action]);
+      }
+    }
+
+    setSyncStatus('synced');
+  }
+
+  // Check network status and process queue when coming back online
+  useEffect(() => {
+    if (isOnline && actionQueue.length > 0) {
+      processActionQueue();
+    }
+  }, [isOnline, actionQueue.length]);
 
   // Removed localStorage functions - using only Firestore now
 
@@ -124,10 +195,45 @@ export function AuthProvider({ children }) {
       }
     }, (error) => {
       console.error('Error listening to user data:', error);
+
+      // Check if this is a network error
+      const isNetworkError = error.code === 'unavailable' ||
+                           error.code === 'deadline-exceeded' ||
+                           error.code === 'cancelled';
+
+      if (isNetworkError) {
+        setIsOnline(false);
+        setSyncStatus('error');
+      }
     });
 
     return unsubscribe;
   }, [currentUser, ignoreRemoteChanges]);
+
+  // Monitor network status by testing connectivity on errors
+  useEffect(() => {
+    const checkConnection = async () => {
+      const wasOnline = isOnline;
+      const networkAvailable = await checkNetworkStatus();
+
+      if (networkAvailable !== wasOnline) {
+        setIsOnline(networkAvailable);
+        if (networkAvailable) {
+          setSyncStatus('syncing');
+          // Process any queued actions when we come back online
+          setTimeout(() => processActionQueue(), 1000);
+        } else {
+          setSyncStatus('error');
+        }
+      }
+    };
+
+    // Check connection when there are errors or pending actions
+    if (syncStatus === 'error' || actionQueue.length > 0) {
+      const timeoutId = setTimeout(checkConnection, 2000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [syncStatus, actionQueue.length, isOnline]);
 
   // Export user data to file
   function exportUserData() {
@@ -196,7 +302,13 @@ export function AuthProvider({ children }) {
     loadUserData: currentUser ? () => loadUserData(currentUser.uid) : () => ({ allCrates: [], config: { wins: 0, gpWins: 0 } }),
     setIgnoreRemoteChanges,
     exportUserData,
-    importUserData
+    importUserData,
+    // Offline sync features
+    isOnline,
+    syncStatus,
+    actionQueue,
+    processActionQueue,
+    queueAction
   };
 
   return (
