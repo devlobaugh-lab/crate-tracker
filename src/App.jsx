@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.1.4'
+const APP_VERSION = '1.1.5'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -128,7 +128,7 @@ function AppContent() {
     setState({ ...state, allCrates: newAll, config: newConfig });
 
     // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 200);
+    setTimeout(() => setIgnoreRemoteChanges(false), 1000);
   }
 
   function undoCrate() {
@@ -143,7 +143,7 @@ function AppContent() {
     setState({ ...state, allCrates: newAllCrates, config: newConfig });
 
     // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 200);
+    setTimeout(() => setIgnoreRemoteChanges(false), 1000);
   }
 
   const [view, setView] = state.allCrates.length == 0 ? useState('intro') : useState('main');
@@ -179,8 +179,7 @@ function AppContent() {
               <div>Choose current crate</div>
               <div><button
                 onClick={() => undoCrate()}
-                className="text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200"
-              >
+                className="text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200">
                 <ArrowUturnLeftIcon className="w-6 h-6" />
               </button></div>
             </div>
@@ -222,7 +221,7 @@ function AppContent() {
               setState(s => ({ ...s, config: cfg }));
             }
             // Re-enable remote changes after a short delay
-            setTimeout(() => setIgnoreRemoteChanges(false), 200);
+            setTimeout(() => setIgnoreRemoteChanges(false), 1000);
           }}
           onBack={() => setView('main')}
           setIgnoreRemoteChanges={setIgnoreRemoteChanges}
