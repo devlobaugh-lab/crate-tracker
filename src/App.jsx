@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.1.3'
+const APP_VERSION = '1.1.4'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -405,7 +405,7 @@ function IntroView({onBack}) {
     <div className="bg-gray-700 px-6 py-4 rounded-2xl shadow-lg">
     <div className="flex items-center justify-between mb-4">
       <h2 className="text-xl font-bold text-white tracking-wide">Introduction</h2>
-      <button className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200" onClick={onBack}>Back</button>
+      <button className="py-1 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200" onClick={onBack}>Start</button>
     </div>
 
     <div className="">
