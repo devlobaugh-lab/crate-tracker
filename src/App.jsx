@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import Login from './Login'
 import UserProfile from './UserProfile'
-import { ArrowUturnLeftIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { ArrowUturnLeftIcon, Cog6ToothIcon, WifiIcon, ExclamationTriangleIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
 const CRATE_TYPES = [
   { key: 'Green', color: 'bg-green-700', label: 'Green', value: 'B' },
@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.1.5'
+const APP_VERSION = '1.1.6'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -89,9 +89,59 @@ function nextPatternValues(userInput, masterPattern) {
   return result;
 }
 
+// Connection Status Indicator Component
+function ConnectionStatus({ isOnline, syncStatus, actionQueue }) {
+  const getStatusIcon = () => {
+    switch (syncStatus) {
+      case 'synced':
+        return <CheckCircleIcon className="w-4 h-4 text-green-400" />;
+      case 'syncing':
+        return <ClockIcon className="w-4 h-4 text-blue-400 animate-pulse" />;
+      case 'pending':
+        return <ClockIcon className="w-4 h-4 text-yellow-400" />;
+      case 'error':
+        return <ExclamationTriangleIcon className="w-4 h-4 text-red-400" />;
+      default:
+        return <WifiIcon className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusText = () => {
+    if (!isOnline) return 'Offline';
+    if (actionQueue.length > 0) return `${actionQueue.length} pending`;
+    switch (syncStatus) {
+      case 'synced':
+        return 'Data Synced';
+      case 'syncing':
+        return 'Data Syncing...';
+      case 'pending':
+        return 'Sync Pending';
+      case 'error':
+        return 'Sync error';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {getStatusIcon()}
+      <span className={`font-medium ${
+        !isOnline ? 'text-red-400' :
+        syncStatus === 'error' ? 'text-red-400' :
+        syncStatus === 'pending' ? 'text-yellow-400' :
+        syncStatus === 'syncing' ? 'text-blue-400' :
+        'text-green-400'
+      }`}>
+        {getStatusText()}
+      </span>
+    </div>
+  );
+}
+
 // AppContent component that contains the main app logic
 function AppContent() {
-  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges } = useAuth();
+  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue } = useAuth();
 
   const [state, setState] = useState(() => {
     // Use userData if available, otherwise use default empty state
@@ -156,7 +206,10 @@ function AppContent() {
     <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col">
       <header className="flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
-        <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
+          {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
+        </div>
       </header>
       <div className="flex justify-end pr-2 mb-2">
         <button
@@ -240,8 +293,15 @@ function AppContent() {
       </div>
 
       <footer className="flex text-xs text-gray-500 items-center justify-between">
-        <div>
-          {currentUser ? 'Data synced to your account' : 'Sign in to save your data to the cloud'}
+        <div className="flex items-center gap-2">
+          <span>
+            {currentUser ? '' : 'Sign in to save your data to the cloud'}
+          </span>
+          {currentUser && (
+            <div className="flex items-center gap-1">
+              <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} />
+            </div>
+          )}
         </div>
         <div>
           App version {APP_VERSION}
