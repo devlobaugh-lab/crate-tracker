@@ -141,30 +141,132 @@ function ConnectionStatus({ isOnline, syncStatus, actionQueue }) {
 
 // AppContent component that contains the main app logic
 function AppContent() {
-  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue } = useAuth();
+  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue, saveOfflineData, clearOfflineData, loadOfflineData } = useAuth();
 
   const [state, setState] = useState(() => {
+    console.log('🚀 App initializing - checking data sources');
+    console.log('🚀 Current context state - isOnline:', isOnline, 'syncStatus:', syncStatus, 'currentUser:', currentUser?.uid?.substring(0, 8));
+
+    // Check if we're in offline mode and should prioritize localStorage
+    if (!isOnline && syncStatus === 'error' && currentUser) {
+      console.log('🔄 App startup in offline mode - prioritizing localStorage');
+
+      try {
+        const key = `crate-tracker-offline-${currentUser.uid}`;
+        console.log('🔍 Checking localStorage key:', key);
+
+        // Debug: Check all localStorage keys
+        console.log('🔍 All localStorage keys:', Object.keys(localStorage));
+
+        const savedData = localStorage.getItem(key);
+        console.log('📦 Raw localStorage data for key:', savedData);
+
+        if (savedData && savedData !== 'null' && savedData !== 'undefined') {
+          const parsedData = JSON.parse(savedData);
+          const { data, timestamp } = parsedData;
+
+          console.log('✅ Found offline data:');
+          console.log('  - Timestamp:', timestamp);
+          console.log('  - Wins:', data.config.wins);
+          console.log('  - Crates:', data.allCrates.length);
+          console.log('  - Full data:', data);
+
+          console.log('🔄 Initializing with offline data (wins:', data.config.wins, ', crates:', data.allCrates.length, ')');
+          return data;
+        } else {
+          console.log('ℹ️ No valid offline data found in localStorage');
+          console.log('📦 localStorage value was:', savedData);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load offline data during initialization:', error);
+        console.error('❌ Error details:', error.message);
+      }
+    }
+
     // Use userData if available, otherwise use default empty state
-    if (userData) return userData;
+    if (userData) {
+      console.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
+      return userData;
+    }
+
+    console.log('🔄 Initializing with default empty state');
     return { allCrates: [], config: { wins: 0, gpWins: 0 } };
   });
 
+  const [saveTimeout, setSaveTimeout] = useState(null);
+
   // Update state when userData changes (from real-time listener)
   useEffect(() => {
-    if (userData) {
+    // Only update state from Firebase if we're truly online and not in error state
+    if (userData && isOnline && syncStatus === 'synced') {
+      console.log('📡 Updating state from Firebase real-time data');
       setState(userData);
+    } else {
+      console.log('📡 Ignoring Firebase real-time data - not in online synced state');
     }
-  }, [userData]);
+  }, [userData, isOnline, syncStatus]);
 
-  // Save state to Firestore 
+  // Save to localStorage when state changes and we're offline
   useEffect(() => {
-    if (state && currentUser) {
-      saveUserData(state);
+    if (state && currentUser && !isOnline && syncStatus === 'error') {
+      console.log('💾 Saving offline state to localStorage');
+      console.log('💾 State data:', state);
+      saveOfflineData(state);
     }
-  }, [state, saveUserData, currentUser]);
+  }, [state, currentUser, isOnline, syncStatus, saveOfflineData]);
 
-  const lastTen = state.allCrates.slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
-  const futureTen = nextPatternValues(state.allCrates, MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
+  // Clear localStorage when successfully synced
+  useEffect(() => {
+    if (isOnline && syncStatus === 'synced' && currentUser) {
+      console.log('🗑️ Clearing localStorage after successful sync');
+      clearOfflineData();
+    }
+  }, [isOnline, syncStatus, currentUser, clearOfflineData]);
+
+  // Load offline data on app startup if we're offline
+  useEffect(() => {
+    if (currentUser && !isOnline && syncStatus === 'error') {
+      console.log('🔄 App startup - attempting to load offline data');
+      // Small delay to ensure localStorage functions are available
+      setTimeout(() => {
+        const offlineData = loadOfflineData();
+        if (offlineData) {
+          console.log('✅ Setting offline data to state');
+          setState(offlineData);
+        } else {
+          console.log('ℹ️ No offline data found');
+        }
+      }, 100);
+    }
+  }, [currentUser, isOnline, syncStatus, loadOfflineData]);
+
+  // Debounced save state to Firestore to prevent excessive calls
+  useEffect(() => {
+    // Don't save if we're offline due to quota errors
+    if (state && currentUser && !saveTimeout && isOnline && syncStatus !== 'error') {
+      console.log('📤 State changed, scheduling save...');
+
+      const timeout = setTimeout(() => {
+        console.log('💾 Executing scheduled save');
+        saveUserData(state);
+        setSaveTimeout(null);
+      }, 500); // Debounce saves by 500ms
+
+      setSaveTimeout(timeout);
+    } else if (!isOnline || syncStatus === 'error') {
+      console.log('⏸️ Skipping scheduled save due to offline/quota error state');
+    }
+
+    return () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        setSaveTimeout(null);
+      }
+    };
+  }, [state, saveUserData, currentUser, isOnline, syncStatus]);
+
+  const lastTen = (state?.allCrates || []).slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
+  const futureTen = nextPatternValues(state?.allCrates || [], MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
 
   function addCrate(crateKey) {
     // Temporarily ignore remote changes to prevent sync loop
@@ -196,7 +298,7 @@ function AppContent() {
     setTimeout(() => setIgnoreRemoteChanges(false), 1000);
   }
 
-  const [view, setView] = state.allCrates.length == 0 ? useState('intro') : useState('main');
+  const [view, setView] = (state?.allCrates?.length || 0) == 0 ? useState('intro') : useState('main');
 
   if (!currentUser) {
     return <Login />;
@@ -207,7 +309,7 @@ function AppContent() {
       <header className="flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
         <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-200 font-semibold">Wins: {state.config.wins}</div>
+          <div className="text-sm text-gray-200 font-semibold">Wins: {state?.config?.wins || 0}</div>
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
@@ -269,9 +371,11 @@ function AppContent() {
               // Handle import case - restore complete state
               setState(importData);
             } else if (resetAllCrates) {
-              setState(s => ({ ...s, allCrates: [], config: cfg }));
+              // Handle reset case - clear all crates and reset config
+              setState(s => ({ ...s, allCrates: [], config: { wins: 0, gpWins: 0 } }));
             } else {
-              setState(s => ({ ...s, config: cfg }));
+              // Handle config update case - merge new config
+              setState(s => ({ ...s, config: { ...s.config, ...cfg } }));
             }
             // Re-enable remote changes after a short delay
             setTimeout(() => setIgnoreRemoteChanges(false), 1000);
@@ -320,40 +424,40 @@ function App() {
 }
 
 function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
-  const { currentUser, saveUserData, exportUserData, importUserData } = useAuth();
-  const [local, setLocal] = useState(config);
+  const { currentUser, saveUserData, exportUserData, importUserData, isOnline, syncStatus } = useAuth();
+  const [local, setLocal] = useState(config || { wins: 0, gpWins: 0 });
   const [importStatus, setImportStatus] = useState('');
 
-  useEffect(() => setLocal(config), [config]);
+  useEffect(() => setLocal(config || { wins: 0, gpWins: 0 }), [config]);
 
   function commit() {
     onChange(local);
     onBack();
   }
 
-  async function reset() {
+  function reset() {
+    console.log('🔄 Reset button clicked');
+
     // Temporarily ignore remote changes to prevent sync loop
     setIgnoreRemoteChanges(true);
 
-    const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
+    // Update state immediately - this should always work
+    console.log('🔄 Resetting state to zero');
+    onChange({ wins: 0, gpWins: 0 }, true, false);
 
-    // Save to Firestore
+    // Save to Firestore (will fail if offline, but that's okay)
     if (currentUser) {
-      try {
-        await saveUserData(resetData);
-      } catch (error) {
-        console.error('Firestore reset save failed:', error);
-      }
-    } else {
-      console.log('No current user, cannot reset data');
+      const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
+      saveUserData(resetData).catch(error => {
+        console.log('ℹ️ Firestore save failed (expected if offline):', error.message);
+      });
     }
-    
-    // Update state and navigate back
-    onChange({ wins: 0, gpWins: 0 }, true);
+
+    console.log('✅ State reset completed');
     setImportStatus('All Data reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
 
-    // Re-enable remote changes after a longer delay to ensure all operations complete
+    // Re-enable remote changes after a delay
     setTimeout(() => {
       console.log('Re-enabling remote changes');
       setIgnoreRemoteChanges(false);
@@ -442,8 +546,8 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
             className="hidden"
           />
         </label>
-        <button 
-          onClick={reset} 
+        <button
+          onClick={() => reset()}
           className="py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200">
             Reset All Values
         </button>
