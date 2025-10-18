@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.1.8'
+const APP_VERSION = '1.1.9'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {
@@ -143,6 +143,40 @@ function ConnectionStatus({ isOnline, syncStatus, actionQueue }) {
 function AppContent() {
   const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue, saveOfflineData, clearOfflineData, loadOfflineData } = useAuth();
 
+  // Custom hook to manage single timeout for setIgnoreRemoteChanges
+  const useIgnoreRemoteChangesTimeout = () => {
+    const timeoutRef = React.useRef(null);
+
+    const setIgnoreWithTimeout = React.useCallback((delay = 1000) => {
+      // Clear any existing timeout first
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set ignore to true immediately for this operation
+      setIgnoreRemoteChanges(true);
+
+      // Set new timeout
+      timeoutRef.current = setTimeout(() => {
+        setIgnoreRemoteChanges(false);
+        timeoutRef.current = null;
+      }, delay);
+    }, [setIgnoreRemoteChanges]);
+
+    // Cleanup timeout on unmount
+    React.useEffect(() => {
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, []);
+
+    return setIgnoreWithTimeout;
+  };
+
+  const setIgnoreWithTimeout = useIgnoreRemoteChangesTimeout();
+
   const [state, setState] = useState(() => {
     console.log('🚀 App initializing - checking data sources');
     console.log('🚀 Current context state - isOnline:', isOnline, 'syncStatus:', syncStatus, 'currentUser:', currentUser?.uid?.substring(0, 8));
@@ -243,9 +277,15 @@ function AppContent() {
   // Debounced save state to Firestore to prevent excessive calls
   useEffect(() => {
     // Don't save if we're offline due to quota errors
-    if (state && currentUser && !saveTimeout && isOnline && syncStatus !== 'error') {
+    if (state && currentUser && isOnline && syncStatus !== 'error') {
       console.log('📤 State changed, scheduling save...');
 
+      // Clear any existing timeout
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      // Set new timeout - this ensures saves happen even with rapid clicks
       const timeout = setTimeout(() => {
         console.log('💾 Executing scheduled save');
         saveUserData(state);
@@ -269,33 +309,33 @@ function AppContent() {
   const futureTen = nextPatternValues(state?.allCrates || [], MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
 
   function addCrate(crateKey) {
-    // Temporarily ignore remote changes to prevent sync loop
-    setIgnoreRemoteChanges(true);
     const crateType = CRATE_TYPES.find(t => t.key === crateKey);
     const crateValue = crateType ? crateType.value : '?';
     const newAll = [...state.allCrates, crateValue];
     const newConfig = { ...state.config };
     newConfig.wins += 1;
     if (crateKey === 'GP') newConfig.gpWins += 1;
+
+    // Update state immediately - let Firebase handle the sync naturally
     setState({ ...state, allCrates: newAll, config: newConfig });
 
-    // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 1000);
+    // Don't use setIgnoreRemoteChanges for crate operations
+    // Let Firebase's natural debouncing and sync handle it
   }
 
   function undoCrate() {
     if (state.allCrates.length === 0) return; // Nothing to undo
-    // Temporarily ignore remote changes to prevent sync loop
-    setIgnoreRemoteChanges(true);
     const lastCrate = state.allCrates[state.allCrates.length - 1];
     const newAllCrates = state.allCrates.slice(0, -1);
     const newConfig = { ...state.config };
     newConfig.wins -= 1;
     if (lastCrate === 'X') newConfig.gpWins -= 1;
+
+    // Update state immediately - let Firebase handle the sync naturally
     setState({ ...state, allCrates: newAllCrates, config: newConfig });
 
-    // Re-enable remote changes after a short delay
-    setTimeout(() => setIgnoreRemoteChanges(false), 1000);
+    // Don't use setIgnoreRemoteChanges for crate operations
+    // Let Firebase's natural debouncing and sync handle it
   }
 
   const [view, setView] = (state?.allCrates?.length || 0) == 0 ? useState('intro') : useState('main');
@@ -365,8 +405,6 @@ function AppContent() {
           config={state.config}
           allCrates={state.allCrates}
           onChange={(cfg, resetAllCrates, importData) => {
-            // Temporarily ignore remote changes to prevent sync loop
-            setIgnoreRemoteChanges(true);
             if (importData) {
               // Handle import case - restore complete state
               setState(importData);
@@ -377,8 +415,8 @@ function AppContent() {
               // Handle config update case - merge new config
               setState(s => ({ ...s, config: { ...s.config, ...cfg } }));
             }
-            // Re-enable remote changes after a short delay
-            setTimeout(() => setIgnoreRemoteChanges(false), 1000);
+            // Use longer timeout for config operations too
+            setIgnoreWithTimeout(5000);
           }}
           onBack={() => setView('main')}
           setIgnoreRemoteChanges={setIgnoreRemoteChanges}
@@ -457,7 +495,8 @@ function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
     setImportStatus('All Data reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
 
-    // Re-enable remote changes after a delay
+    // Re-enable remote changes after a shorter delay (using single timeout manager)
+    // Note: Using 200ms delay as before to match the original behavior
     setTimeout(() => {
       console.log('Re-enabling remote changes');
       setIgnoreRemoteChanges(false);
