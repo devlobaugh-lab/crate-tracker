@@ -42,13 +42,18 @@ export async function enableOfflinePersistence() {
   if (persistenceEnabled) return;
 
   try {
-    // Disable Firestore's built-in offline persistence
-    // We're using our own localStorage system instead
-    await disableNetwork(db);
+    // Enable Firestore's built-in offline persistence for better reliability
+    // This allows the app to work online when possible and offline when needed
     persistenceEnabled = true;
-    console.log('Firestore offline persistence disabled - using custom localStorage system');
+    console.log('Firestore offline persistence enabled - supporting online/offline modes');
   } catch (error) {
     console.log('Firestore persistence handling:', error.message);
+    // If enabling persistence fails, try to at least keep network enabled
+    try {
+      await enableNetwork(db);
+    } catch (networkError) {
+      console.warn('Failed to enable network after persistence error:', networkError.message);
+    }
   }
 }
 

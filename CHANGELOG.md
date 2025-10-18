@@ -1,4 +1,10 @@
 # Changelog
+### Ver 1.1.8 - 10/18/2025
+
+### Fixed various issues with connectivity with Firebase and auth
+- app staying offline on start (not recognizing firebase)
+- renewed auth putting app into offline mode 
+
 ### Ver 1.1.7 - 10/17/2025
 
 ## ✅ **Completed Implementation** (via Cline)
