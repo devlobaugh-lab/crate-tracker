@@ -16,7 +16,6 @@ Data Storage and Auth services provided by Firebase
 - Requires login with google account
     - allows app to have different users with different save data
     - data is saved in cloud (firebase), allowing user to move between devices
-- User is only allowed to be logged into one device at a time (it will log you out of others)
 - Mobile-first responsive layout using TailwindCSS.
 - Dockerized for easy deployment.
 - Setup to be hosted on Firebase as well. 
@@ -54,6 +53,7 @@ npm run build
 ## Firebase Deployment
 ```bash
 cd <directory of this app>
+npm run build
 firebase login
 firebase deploy --only hosting
 ```
