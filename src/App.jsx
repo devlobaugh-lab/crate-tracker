@@ -25,7 +25,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 const STORAGE_KEY = 'crate-tracker:v1'
 
-const APP_VERSION = '1.1.7'
+const APP_VERSION = '1.1.8'
 
 function SmallRow({ crates = [] }) {
   if (crates.length === 0) {

@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Allow authenticated users to access their own documents
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // For development/testing purposes, allow some flexibility
+    // TODO: Remove this rule in production
+    match /test/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Default deny rule for any other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

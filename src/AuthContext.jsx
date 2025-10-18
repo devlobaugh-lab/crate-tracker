@@ -85,25 +85,20 @@ export function AuthProvider({ children }) {
       console.error('❌ Load error code:', error.code);
       console.error('❌ Load error message:', error.message);
 
-      // Check if it's a network-related error
+      // Only treat as offline for specific network/quota errors
       const isNetworkError = error.code === 'unavailable' ||
                            error.code === 'deadline-exceeded' ||
-                           error.code === 'cancelled' ||
-                           error.message?.includes('network') ||
-                           error.message?.includes('offline');
+                           error.code === 'cancelled';
 
-      // Check if it's a quota/resource error
       const isQuotaError = error.code === 'resource-exhausted' ||
-                          error.message?.includes('Quota exceeded') ||
-                          error.message?.includes('quota') ||
-                          error.message?.includes('limit');
+                          error.message?.includes('Quota exceeded');
 
       if (isNetworkError || isQuotaError) {
-        setIsOnline(false);
-        setSyncStatus('error');
+        console.log('🚫 Network/quota error detected - staying online but will retry');
+        setSyncStatus('pending');
       }
 
-      // Return default data if Firestore fails (no localStorage fallback)
+      // Return default data if Firestore fails
       return { allCrates: [], config: { wins: 0, gpWins: 0 } };
     }
   }
@@ -289,68 +284,56 @@ export function AuthProvider({ children }) {
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setLoading(true);
+      console.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
 
       if (user) {
-        // User is signed in, load their data
-        const data = await loadUserData(user.uid);
+        // User is signed in - reset connection state and load their data
+        console.log('🔐 User signed in, resetting connection state');
+        setIsOnline(true);
+        setSyncStatus('synced');
+        setCurrentUser(user);
+        setLoading(true);
 
-        // Check if we're in offline mode and should prioritize localStorage
-        if (!isOnline && syncStatus === 'error') {
-          console.log('🔄 In offline mode - checking for localStorage data');
-          const offlineData = loadOfflineData();
-          if (offlineData) {
-            console.log('✅ Using offline data instead of Firebase data');
-            setUserData(offlineData);
-          } else {
-            console.log('ℹ️ No offline data found, using Firebase data');
-            setUserData(data);
-          }
-        } else {
-          // Online mode - use Firebase data, but try offline as fallback if empty
-          if (!data || (data.allCrates.length === 0 && data.config.wins === 0)) {
-            console.log('🔄 Firebase data empty - attempting offline data fallback');
-            const offlineLoaded = loadOfflineData();
-            if (offlineLoaded) {
-              console.log('✅ Offline data loaded as fallback');
-            }
-          }
+        try {
+          const data = await loadUserData(user.uid);
           setUserData(data);
+          console.log('✅ User data loaded successfully after sign in');
+        } catch (error) {
+          console.error('❌ Failed to load user data after sign in:', error);
+          setUserData({ allCrates: [], config: { wins: 0, gpWins: 0 } });
         }
       } else {
         // User is signed out, clear data
+        console.log('🔐 User signed out, clearing data');
+        setCurrentUser(null);
         setUserData(null);
+        setIsOnline(true); // Reset to online state for next sign in
+        setSyncStatus('synced');
       }
 
       setLoading(false);
     });
 
     return unsubscribe;
-  }, [isOnline, syncStatus]);
+  }, []);
 
   // Set up real-time listener for user data changes
   useEffect(() => {
-    if (!currentUser) return;
-
-    // Don't set up listener if we're offline due to quota errors or blocked operations
-    if ((!isOnline && syncStatus === 'error') || (isOnline && syncStatus === 'error')) {
-      console.log('⏸️ Skipping real-time listener setup due to offline/blocked error');
+    if (!currentUser) {
+      console.log('⏸️ No current user - skipping real-time listener setup');
       return;
     }
 
+    // Always try to set up the listener when we have a current user
     console.log('🔄 Setting up real-time listener for user:', currentUser.uid.substring(0, 8) + '...');
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     const unsubscribe = onSnapshot(
       userDocRef,
       (doc) => {
-        if (doc.exists() && !ignoreRemoteChanges && isOnline) {
+        if (doc.exists() && !ignoreRemoteChanges) {
           console.log('📡 Real-time data update received from Firebase');
-          console.log('📡 Only updating if online - isOnline:', isOnline, 'syncStatus:', syncStatus);
           setUserData(doc.data());
-        } else if (!isOnline) {
-          console.log('📡 Ignoring Firebase real-time update because app is offline');
         }
       },
       (error) => {
@@ -358,27 +341,29 @@ export function AuthProvider({ children }) {
         console.error('❌ Listener error code:', error.code);
         console.error('❌ Listener error message:', error.message);
 
-        // Check if this is a network error
+        // Only treat specific errors as offline-worthy
         const isNetworkError = error.code === 'unavailable' ||
                              error.code === 'deadline-exceeded' ||
                              error.code === 'cancelled';
 
-        // Check if it's a quota/resource error
         const isQuotaError = error.code === 'resource-exhausted' ||
-                            error.message?.includes('Quota exceeded') ||
-                            error.message?.includes('quota') ||
-                            error.message?.includes('limit');
+                            error.message?.includes('Quota exceeded');
 
+        // For most listener errors, just log them but don't go offline
+        // Only go offline for clear network/quota issues
         if (isNetworkError || isQuotaError) {
-          console.log('🚫 Listener error - setting offline mode');
-          setIsOnline(false);
-          setSyncStatus('error');
+          console.log('🚫 Listener network/quota error - staying online but logging');
+          // Don't automatically go offline for listener errors
+          // The app can still function and retry operations
         }
       }
     );
 
-    return unsubscribe;
-  }, [currentUser, ignoreRemoteChanges, isOnline, syncStatus]);
+    return () => {
+      console.log('🛑 Cleaning up real-time listener');
+      unsubscribe();
+    };
+  }, [currentUser, ignoreRemoteChanges]);
 
   // Monitor network status by testing connectivity on errors
   useEffect(() => {
