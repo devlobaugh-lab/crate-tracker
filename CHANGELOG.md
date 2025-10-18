@@ -1,4 +1,14 @@
 # Changelog
+### Ver 1.1.7 - 10/17/2025
+
+## ✅ **Completed Implementation** (via Cline)
+
+### Offline functionality
+- Disabled Firestore Offline Persistence but kept network management
+- Added LocalStorage to handle offline functionality (instead of Firestore's)
+- Fixed multiple issues with Offline functionality being triggered and recovering
+- Fixed issues with localstorage being used when in offline mode
+- Added extensive console logging (will need to clean up once testing done)
 
 ### Ver 1.1.6 - 10/17/2025
 
