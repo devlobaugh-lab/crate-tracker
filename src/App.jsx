@@ -2,180 +2,26 @@ import React, { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
 import Login from './Login'
 import UserProfile from './UserProfile'
-import { ArrowUturnLeftIcon, Cog6ToothIcon, WifiIcon, ExclamationTriangleIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { Cog6ToothIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
 
-const CRATE_TYPES = [
-  { key: 'Green', color: 'bg-green-700', label: 'Green', value: 'B' },
-  { key: 'Gold', color: 'bg-yellow-400', label: 'Gold', value: 'G' },
-  { key: 'Platinum', color: 'bg-gray-400', label: 'Platinum', value: 'P' },
-  { key: 'Legendary', color: 'bg-amber-700', label: 'Legendary', value: 'L' },
-  { key: 'GP', color: 'bg-blue-500', label: 'GP', value: 'X' },
-  { key: 'Unknown', color: 'bg-white', label: 'Unknown', value: '?'}
-]
+// Import extracted components and utilities
+import SmallRow from './components/common/SmallRow'
+import ConnectionStatus from './components/common/ConnectionStatus'
+import ConfigView from './components/views/ConfigView'
+import IntroView from './components/views/IntroView'
+import CrateGrid from './components/crate/CrateGrid'
+import { useCratePattern } from './hooks/useCratePattern'
+import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges'
+import { APP_VERSION, CRATE_TYPES } from './utils/constants'
 
-const MASTER_PATTERN = `BBBBBBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBGBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBG
-BBBGBBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBLBBGBBBGBBBBGBGBBBBGBBBBGBBG
-BBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL
-BBBBBBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBGBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBG
-BBBGBBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBLBBGBBBGBBBBGBGBBBBGBBBBGBBG
-BBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL
-BBBBBBBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBGBBBBBPBGBBBBGBBGBBBGBBBBGBGBBBBLBBBBGBBB
-GBBBGBBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBLBBGBBBGBBBBGBGBBBBGBBBBGBB
-GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBBL`;
 
-const STORAGE_KEY = 'crate-tracker:v1'
-
-const APP_VERSION = '1.1.9'
-
-function SmallRow({ crates = [] }) {
-  if (crates.length === 0) {
-    return <div className="text-center text-gray-400 italic py-1">No data</div>
-  } else {
-    return (
-      <div className="flex gap-2 justify-center">
-        {crates.map((c, i) => (
-          <div key={i} className={`w-8 h-8 rounded-none shadow-lg border ${c.color}`}></div>
-        ))}
-      </div>
-    )
-  }
-}
-
-function nextPatternValues(userInput, masterPattern) {
-  // Clean up pattern (remove whitespace, newlines, etc.)
-  const pattern = masterPattern.replace(/\s+/g, '');
-  const validChars = ['B', 'G', 'P', 'L'];
-
- // Filter only valid input values
-  const validInputs = userInput.filter(v => validChars.includes(v));
-  
-  // If no valid inputs, return 10 unknowns
-  if (validInputs.length === 0) return Array(10).fill('?');
-
-  const matches = [];
-
-  // Try every possible starting position in the pattern
-  for (let start = 0; start < pattern.length; start++) {
-    let fits = true;
-    for (let i = 0; i < validInputs.length; i++) {
-      const expected = pattern[(start + i) % pattern.length];
-      if (validInputs[i] !== expected) {
-        fits = false;
-        break;
-      }
-    }
-    if (fits) matches.push(start);
-  }
-
-  // If no match found, all outputs are unknown
-  if (matches.length === 0) return Array(10).fill('?');
-
-  // Generate next 10 pattern values for each matching offset
-  const predictions = matches.map(start => {
-    const arr = [];
-    for (let i = validInputs.length; i < validInputs.length + 10; i++) {
-      arr.push(pattern[(start + i) % pattern.length]);
-    }
-    return arr;
-  });
-
-  // Combine predictions — '?' where multiple possibilities disagree
-  const result = [];
-  for (let i = 0; i < 10; i++) {
-    const chars = predictions.map(p => p[i]);
-    const allSame = chars.every(c => c === chars[0]);
-    result.push(allSame ? chars[0] : '?');
-  }
-  return result;
-}
-
-// Connection Status Indicator Component
-function ConnectionStatus({ isOnline, syncStatus, actionQueue }) {
-  const getStatusIcon = () => {
-    switch (syncStatus) {
-      case 'synced':
-        return <CheckCircleIcon className="w-4 h-4 text-green-400" />;
-      case 'syncing':
-        return <ClockIcon className="w-4 h-4 text-blue-400 animate-pulse" />;
-      case 'pending':
-        return <ClockIcon className="w-4 h-4 text-yellow-400" />;
-      case 'error':
-        return <ExclamationTriangleIcon className="w-4 h-4 text-red-400" />;
-      default:
-        return <WifiIcon className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusText = () => {
-    if (!isOnline) return 'Offline';
-    if (actionQueue.length > 0) return `${actionQueue.length} pending`;
-    switch (syncStatus) {
-      case 'synced':
-        return 'Data Synced';
-      case 'syncing':
-        return 'Data Syncing...';
-      case 'pending':
-        return 'Sync Pending';
-      case 'error':
-        return 'Sync error';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      {getStatusIcon()}
-      <span className={`font-medium ${
-        !isOnline ? 'text-red-400' :
-        syncStatus === 'error' ? 'text-red-400' :
-        syncStatus === 'pending' ? 'text-yellow-400' :
-        syncStatus === 'syncing' ? 'text-blue-400' :
-        'text-green-400'
-      }`}>
-        {getStatusText()}
-      </span>
-    </div>
-  );
-}
 
 // AppContent component that contains the main app logic
 function AppContent() {
   const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue, saveOfflineData, clearOfflineData, loadOfflineData } = useAuth();
 
-  // Custom hook to manage single timeout for setIgnoreRemoteChanges
-  const useIgnoreRemoteChangesTimeout = () => {
-    const timeoutRef = React.useRef(null);
-
-    const setIgnoreWithTimeout = React.useCallback((delay = 1000) => {
-      // Clear any existing timeout first
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Set ignore to true immediately for this operation
-      setIgnoreRemoteChanges(true);
-
-      // Set new timeout
-      timeoutRef.current = setTimeout(() => {
-        setIgnoreRemoteChanges(false);
-        timeoutRef.current = null;
-      }, delay);
-    }, [setIgnoreRemoteChanges]);
-
-    // Cleanup timeout on unmount
-    React.useEffect(() => {
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-      };
-    }, []);
-
-    return setIgnoreWithTimeout;
-  };
-
-  const setIgnoreWithTimeout = useIgnoreRemoteChangesTimeout();
+  // Use extracted custom hooks
+  const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   const [state, setState] = useState(() => {
     console.log('🚀 App initializing - checking data sources');
@@ -305,9 +151,10 @@ function AppContent() {
     };
   }, [state, saveUserData, currentUser, isOnline, syncStatus]);
 
-  const lastTen = (state?.allCrates || []).slice(-10).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
-  const futureTen = nextPatternValues(state?.allCrates || [], MASTER_PATTERN).map(v => CRATE_TYPES.find(t => t.value === v) || CRATE_TYPES.find(t => t.value === '?'));
+  // Use pattern hook after state is defined
+  const { lastTen, futureTen } = useCratePattern(state?.allCrates || []);
 
+  // Crate management functions
   function addCrate(crateKey) {
     const crateType = CRATE_TYPES.find(t => t.key === crateKey);
     const crateValue = crateType ? crateType.value : '?';
@@ -369,29 +216,7 @@ function AppContent() {
             <SmallRow crates={lastTen} />
           </section>
 
-          <section className="mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg">
-            <div className="text-sm text-gray-200 mb-4 font-semibold flex justify-between items-center">
-              <div>Choose current crate</div>
-              <div><button
-                onClick={() => undoCrate()}
-                className="text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200">
-                <ArrowUturnLeftIcon className="w-6 h-6" />
-              </button></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {CRATE_TYPES.map(ct => (
-                <button
-                  key={ct.key}
-                  onClick={() => addCrate(ct.key)}
-                  className={`p-3 rounded-lg shadow-md flex items-center justify-center transition-transform duration-150 hover:scale-105 hover:shadow-xl ${ct.color} ${ct.key === 'Unknown' ? 'border border-gray-400' : ''}`}
-                >
-                  <span className={`font-semibold text-sm ${ct.value === '?' || ct.value === 'G' || ct.value === 'P' ? 'text-gray-800' : 'text-white'}`}>
-                    {ct.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+          <CrateGrid onCrateSelect={addCrate} onUndo={undoCrate} />
 
           <section className="mb-2">
             <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
@@ -461,177 +286,6 @@ function App() {
   );
 }
 
-function ConfigView({ config, onChange, onBack, setIgnoreRemoteChanges }) {
-  const { currentUser, saveUserData, exportUserData, importUserData, isOnline, syncStatus } = useAuth();
-  const [local, setLocal] = useState(config || { wins: 0, gpWins: 0 });
-  const [importStatus, setImportStatus] = useState('');
 
-  useEffect(() => setLocal(config || { wins: 0, gpWins: 0 }), [config]);
-
-  function commit() {
-    onChange(local);
-    onBack();
-  }
-
-  function reset() {
-    console.log('🔄 Reset button clicked');
-
-    // Temporarily ignore remote changes to prevent sync loop
-    setIgnoreRemoteChanges(true);
-
-    // Update state immediately - this should always work
-    console.log('🔄 Resetting state to zero');
-    onChange({ wins: 0, gpWins: 0 }, true, false);
-
-    // Save to Firestore (will fail if offline, but that's okay)
-    if (currentUser) {
-      const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
-      saveUserData(resetData).catch(error => {
-        console.log('ℹ️ Firestore save failed (expected if offline):', error.message);
-      });
-    }
-
-    console.log('✅ State reset completed');
-    setImportStatus('All Data reset successfully!');
-    setTimeout(() => setImportStatus(''), 3000);
-
-    // Re-enable remote changes after a shorter delay (using single timeout manager)
-    // Note: Using 200ms delay as before to match the original behavior
-    setTimeout(() => {
-      console.log('Re-enabling remote changes');
-      setIgnoreRemoteChanges(false);
-    }, 200);
-  }
-
-  async function handleExport() {
-    try {
-      await exportUserData();
-      setImportStatus('Data exported successfully!');
-      setTimeout(() => setImportStatus(''), 3000);
-    } catch (error) {
-      setImportStatus('Export failed: ' + error.message);
-      setTimeout(() => setImportStatus(''), 3000);
-    }
-  }
-
-  async function handleImport(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-      setImportStatus('Importing...');
-      const importedData = await importUserData(file);
-
-      // Prepare the complete state data for import
-      const completeImportData = {
-        allCrates: importedData.allCrates,
-        config: {
-          wins: importedData.config.wins || 0,
-          gpWins: importedData.config.gpWins || 0
-        }
-      };
-
-      // Use onChange with importData parameter to restore complete state
-      onChange(null, false, completeImportData);
-
-      setImportStatus('Data imported successfully!');
-      setTimeout(() => setImportStatus(''), 3000);
-    } catch (error) {
-      setImportStatus('Import failed: ' + error.message);
-      setTimeout(() => setImportStatus(''), 3000);
-    }
-
-    // Clear the input
-    event.target.value = '';
-  }
-
-  return (
-  <div className="bg-gray-700 px-6 py-4 rounded-2xl shadow-lg">
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-xl font-bold text-white tracking-wide">Config</h2>
-      <button className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200" onClick={onBack}>Back</button>
-    </div>
-
-    <label className="block mb-4">
-      <div className="text-xs text-gray-300 font-semibold">Number of wins</div>
-      <input type="number" value={local.wins} onChange={e => setLocal({...local, wins: Number(e.target.value)})} className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </label>
-
-    <label className="block mb-4">
-      <div className="text-xs text-gray-300 font-semibold">GP wins</div>
-      <input type="number" value={local.gpWins} onChange={e => setLocal({...local, gpWins: Number(e.target.value)})} className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </label>
-
-
-    <div className="flex gap-4">
-      <button onClick={commit} className="flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200">Save</button>
-      <button onClick={onBack} className="flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm shadow hover:bg-gray-700 transition-colors duration-200">Cancel</button>
-    </div>
-    <div className="mt-6">
-      <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
-      <div className="grid grid-cols-2 gap-3 mb-2">
-        <button
-          onClick={handleExport}
-          className="py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200"
-        >
-          Export Data
-        </button>
-        <label className="py-2 px-3 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow hover:bg-purple-700 transition-colors duration-200 cursor-pointer text-center">
-          Import Data
-          <input
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-          />
-        </label>
-        <button
-          onClick={() => reset()}
-          className="py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200">
-            Reset All Values
-        </button>
-    
-      </div>
-      {importStatus && (
-        <div className={`text-sm p-2 rounded-lg text-center ${importStatus.includes('failed') || importStatus.includes('Failed') ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-          {importStatus}
-        </div>
-      )}
-    </div>
-  </div>
-  )
-}
-
-function IntroView({onBack}) {
-  return (
-    <div className="bg-gray-700 px-6 py-4 rounded-2xl shadow-lg">
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-xl font-bold text-white tracking-wide">Introduction</h2>
-      <button className="py-1 px-4 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200" onClick={onBack}>Start</button>
-    </div>
-
-    <div className="">
-      <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Welcome to the Crate Tracker for F1 Clash!</div>
-      <div className="text-xs text-gray-300 mb-3">
-        This app helps you track your crate wins and predict future crates based on the known pattern. 
-        Simply log each crate you win and get predictions for the next 10. Predictions get better the more crates you log. 
-      </div>
-      <div className="text-xs text-gray-300 mb-3">
-        Note: Since you signed in with your Google account. Your data will be synced to the cloud, allowing you to access it from any device.
-      </div>
-      <div className="text-xs text-gray-300 mb-3">
-        To get started:
-        <ul className="list-disc list-inside mt-2 mb-2">
-          <li>Log any crates you already know IN ORDER</li>
-          <li>Set your total wins to match your in-game total (Click the gear icon at top right)</li>
-        </ul>
-      </div>
-      <div className="text-xs text-gray-300 mb-3">
-        Once setup, simply log each crate you win. The app will automatically update your win count and GP wins (Blue crates).
-      </div>
-    </div>
-  </div>
-  )
-}
         
 export default App

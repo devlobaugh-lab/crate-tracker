@@ -1,4 +1,96 @@
 # Changelog
+
+### Ver 1.2.0 - 10/20/2025 - Refactor of application from POC to early verison - clean up structure and improve overall
+
+### ✅ __Major Refactoring Completed__
+__App.jsx Transformation:__
+
+- ✅ __Removed__ 200+ lines of duplicated code
+- ✅ __Integrated__ all extracted components and hooks
+- ✅ __Simplified__ the main App component significantly
+- ✅ __Fixed__ import issues and dependencies
+- ✅ __Maintained__ all original functionality
+
+__Key Improvements:__
+
+- __Better Separation of Concerns__: Each component has a single responsibility
+- __Improved Maintainability__: Much easier to find and modify specific functionality
+- __Enhanced Reusability__: Components can be easily reused or tested independently
+- __Cleaner Code__: Removed code duplication and improved organization
+
+### 📊 __Before vs After Comparison__
+
+__Before (Original App.jsx):__
+
+- ❌ 500+ lines in a single file
+- ❌ Mixed UI, business logic, and state management
+- ❌ Hard to maintain and debug
+- ❌ Difficult to test individual features
+
+__After (Refactored Structure):__
+
+- ✅ __App.jsx__: ~150 lines (focused on high-level logic)
+- ✅ __8 separate component files__ (each with single responsibility)
+- ✅ __2 custom hooks__ (reusable logic)
+- ✅ __2 utility files__ (constants and helper functions)
+- ✅ __Easy to maintain and extend__
+
+### 🏗️ __New File Structure Created__
+
+```javascript
+src/
+├── utils/
+│   ├── constants.js          # All app constants
+│   └── patternUtils.js       # Pattern prediction logic
+├── components/
+│   ├── common/
+│   │   ├── SmallRow.jsx      # Crate display component
+│   │   └── ConnectionStatus.jsx # Network status
+│   ├── views/
+│   │   ├── ConfigView.jsx    # Settings screen
+│   │   └── IntroView.jsx     # Welcome screen
+│   └── crate/
+│       └── CrateGrid.jsx     # Main crate selection
+├── hooks/
+│   ├── useCratePattern.js    # Pattern prediction hook
+│   └── useIgnoreRemoteChanges.js # Timeout management
+└── App.jsx                   # Simplified main component
+```
+### ✅ __Completed Components & Files__
+
+__Utils & Constants:__
+
+- ✅ `src/utils/constants.js` - All application constants extracted
+- ✅ `src/utils/patternUtils.js` - Pattern prediction functions with JSDoc
+
+__Common Components:__
+
+- ✅ `src/components/common/SmallRow.jsx` - Reusable crate display component
+- ✅ `src/components/common/ConnectionStatus.jsx` - Network status indicator
+
+__View Components:__
+
+- ✅ `src/components/views/ConfigView.jsx` - Configuration screen
+- ✅ `src/components/views/IntroView.jsx` - Welcome/intro screen
+
+__Custom Hooks:__
+
+- ✅ `src/hooks/useCratePattern.js` - Memoized pattern prediction logic
+- ✅ `src/hooks/useIgnoreRemoteChanges.js` - Timeout management hook
+
+__Crate Components:__
+
+- ✅ `src/components/crate/CrateGrid.jsx` - Main crate selection interface
+
+### 🚀 __Benefits Achieved__
+
+1. __Performance__: Memoized expensive pattern calculations
+2. __Maintainability__: Each file has a clear, single purpose
+3. __Testability__: Components can be tested in isolation
+4. __Reusability__: Hooks and components can be shared
+5. __Developer Experience__: Much easier to navigate and understand
+
+
 ### Ver 1.1.9 - 10/18/2025
 - fixed issues with debouncing, timeouts, multi click saves
 ### Ver 1.1.8 - 10/18/2025
