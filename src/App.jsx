@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { AuthProvider, useAuth } from './AuthContext'
-import Login from './Login'
-import UserProfile from './UserProfile'
+import Login from './Login.tsx'
+import UserProfile from './UserProfile.tsx'
 import { Cog6ToothIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
 
 // Import extracted components and utilities
-import SmallRow from './components/common/SmallRow'
-import ConnectionStatus from './components/common/ConnectionStatus'
-import ConfigView from './components/views/ConfigView'
-import IntroView from './components/views/IntroView'
-import CrateGrid from './components/crate/CrateGrid'
-import { useCratePattern } from './hooks/useCratePattern'
-import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges'
-import { APP_VERSION, CRATE_TYPES } from './utils/constants'
+import SmallRow from './components/common/SmallRow.tsx'
+import ConnectionStatus from './components/common/ConnectionStatus.tsx'
+import ConfigView from './components/views/ConfigView.tsx'
+import IntroView from './components/views/IntroView.tsx'
+import CrateGrid from './components/crate/CrateGrid.tsx'
+import { useCratePattern } from './hooks/useCratePattern.ts'
+import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts'
+import { APP_VERSION, CRATE_TYPES } from './utils/constants.ts'
 
 
 

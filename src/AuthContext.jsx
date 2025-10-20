@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db, googleProvider, checkNetworkStatus } from './firebase';
+import { auth, db, googleProvider, checkNetworkStatus } from './firebase.ts';
 
 const AuthContext = createContext();
 

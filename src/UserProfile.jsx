@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext.tsx';
 
 function UserProfile() {
   const { currentUser, logout, authLoading } = useAuth();
