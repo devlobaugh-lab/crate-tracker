@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './AuthContext.tsx'
 import Login from './Login.tsx'
 import UserProfile from './UserProfile.tsx'
 import { Cog6ToothIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
+import { ErrorBoundary, AuthErrorBoundary, FirebaseErrorBoundary } from './components/common/ErrorBoundary.tsx'
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx'
@@ -13,7 +14,7 @@ import CrateGrid from './components/crate/CrateGrid.tsx'
 import { useCratePattern } from './hooks/useCratePattern.ts'
 import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts'
 import { APP_VERSION, CRATE_TYPES } from './utils/constants.ts'
-import { User, Crate } from './types.ts'
+import { User, Crate } from './types/index.ts'
 
 // Define the state interface
 interface AppState {
@@ -217,55 +218,111 @@ function AppContent() {
         </button>
       </div>
 
-      {view === 'main' && (
-        <main>
-          <section className="mb-4">
-            <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Last 10 crates</div>
-            <SmallRow crates={lastTen} />
-          </section>
+      <ErrorBoundary
+        fallback={
+          <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
+            <p className="text-red-400 text-sm">Error loading main content. Please refresh the page.</p>
+          </div>
+        }
+      >
+        {view === 'main' && (
+          <main>
+            <ErrorBoundary
+              fallback={
+                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                  Error loading crate history
+                </div>
+              }
+            >
+              <section className="mb-4">
+                <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Last 10 crates</div>
+                <SmallRow crates={lastTen} />
+              </section>
+            </ErrorBoundary>
 
-          <CrateGrid onCrateSelect={addCrate} onUndo={undoCrate} />
+            <ErrorBoundary
+              fallback={
+                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                  Error loading crate grid
+                </div>
+              }
+            >
+              <CrateGrid onCrateSelect={addCrate} onUndo={undoCrate} />
+            </ErrorBoundary>
 
-          <section className="mb-2">
-            <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
-            <SmallRow crates={futureTen} />
-          </section>
-        </main>
-      )}
+            <ErrorBoundary
+              fallback={
+                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                  Error loading predictions
+                </div>
+              }
+            >
+              <section className="mb-2">
+                <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
+                <SmallRow crates={futureTen} />
+              </section>
+            </ErrorBoundary>
+          </main>
+        )}
 
-      {view === 'config' && (
-        <ConfigView
-          config={state.config}
-          allCrates={state.allCrates}
-          onChange={(cfg: any, resetAllCrates?: boolean, importData?: any) => {
-            if (importData) {
-              // Handle import case - restore complete state
-              setState(importData);
-            } else if (resetAllCrates) {
-              // Handle reset case - clear all crates and reset config
-              setState(s => ({ ...s, allCrates: [], config: { wins: 0, gpWins: 0 } }));
-            } else {
-              // Handle config update case - merge new config
-              setState(s => ({ ...s, config: { ...s.config, ...cfg } }));
+        {view === 'config' && (
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
+                <p className="text-red-400 text-sm">Error loading configuration. Please refresh the page.</p>
+              </div>
             }
-            // Use longer timeout for config operations too
-            setIgnoreWithTimeout(5000);
-          }}
-          onBack={() => setView('main')}
-          setIgnoreRemoteChanges={setIgnoreRemoteChanges}
-        />
-      )}
+          >
+            <ConfigView
+              config={state.config}
+              allCrates={state.allCrates}
+              onChange={(cfg: any, resetAllCrates?: boolean, importData?: any) => {
+                if (importData) {
+                  // Handle import case - restore complete state
+                  setState(importData);
+                } else if (resetAllCrates) {
+                  // Handle reset case - clear all crates and reset config
+                  setState(s => ({ ...s, allCrates: [], config: { wins: 0, gpWins: 0 } }));
+                } else {
+                  // Handle config update case - merge new config
+                  setState(s => ({ ...s, config: { ...s.config, ...cfg } }));
+                }
+                // Use longer timeout for config operations too
+                setIgnoreWithTimeout(5000);
+              }}
+              onBack={() => setView('main')}
+              setIgnoreRemoteChanges={setIgnoreRemoteChanges}
+            />
+          </ErrorBoundary>
+        )}
 
-      {view === 'intro' && (
-        <IntroView
-          onBack={() => setView('main')}
-        />
-      )}
+        {view === 'intro' && (
+          <ErrorBoundary
+            fallback={
+              <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
+                <p className="text-red-400 text-sm">Error loading intro view. Please refresh the page.</p>
+              </div>
+            }
+          >
+            <IntroView
+              onBack={() => setView('main')}
+            />
+          </ErrorBoundary>
+        )}
+      </ErrorBoundary>
 
       {/* User Profile Section - Bottom of App */}
-      <div className="mt-6 mb-4">
-        <UserProfile />
-      </div>
+      <ErrorBoundary
+        fallback={
+          <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+            Error loading user profile
+          </div>
+        }
+      >
+        <div className="mt-6 mb-4">
+          <UserProfile />
+        </div>
+      </ErrorBoundary>
 
       <footer className="flex text-xs text-gray-500 items-center justify-between">
         <div className="flex items-center gap-2">
@@ -288,9 +345,21 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary
+      showErrorDetails={process.env.NODE_ENV === 'development'}
+      onError={(error, errorInfo) => {
+        console.error('App-level error:', error, errorInfo);
+        // Could send to error reporting service
+      }}
+    >
+      <FirebaseErrorBoundary>
+        <AuthErrorBoundary>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </AuthErrorBoundary>
+      </FirebaseErrorBoundary>
+    </ErrorBoundary>
   );
 }
 
