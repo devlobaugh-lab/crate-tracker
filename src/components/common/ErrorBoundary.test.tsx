@@ -1,0 +1,272 @@
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import {
+  ErrorBoundary,
+  AuthErrorBoundary,
+  FirebaseErrorBoundary,
+  useErrorHandler,
+  withErrorBoundary
+} from './ErrorBoundary';
+
+// Component that throws an error
+const ThrowError = ({ shouldThrow = false }: { shouldThrow?: boolean }) => {
+  if (shouldThrow) {
+    throw new Error('Test error');
+  }
+  return <div>No error</div>;
+};
+
+// Component that uses the error handler hook
+const HookErrorComponent = () => {
+  const { captureError } = useErrorHandler();
+
+  return (
+    <div>
+      <button onClick={() => captureError(new Error('Hook error'))}>
+        Trigger Hook Error
+      </button>
+    </div>
+  );
+};
+
+describe('ErrorBoundary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Basic Error Boundary', () => {
+    it('should render children when no error occurs', () => {
+      render(
+        <ErrorBoundary>
+          <div>Test content</div>
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Test content')).toBeInTheDocument();
+    });
+
+    it('should render fallback UI when error occurs', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <ErrorBoundary fallback={<div>Error fallback</div>}>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Error fallback')).toBeInTheDocument();
+      expect(consoleSpy).toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should render default error UI when no fallback provided', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+      expect(screen.getByText('Try Again')).toBeInTheDocument();
+      expect(screen.getByText('Reload Page')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should call onError callback when error occurs', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const onErrorSpy = vi.fn();
+
+      render(
+        <ErrorBoundary onError={onErrorSpy}>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(onErrorSpy).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          componentStack: expect.any(String),
+        })
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should retry when Try Again button is clicked', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const TestWrapper = () => {
+        const [shouldThrow, setShouldThrow] = React.useState(true);
+        return (
+          <ErrorBoundary>
+            <ThrowError shouldThrow={shouldThrow} />
+            <button onClick={() => setShouldThrow(false)}>Fix Error</button>
+          </ErrorBoundary>
+        );
+      };
+
+      render(<TestWrapper />);
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+
+      // Click retry button
+      fireEvent.click(screen.getByText('Try Again'));
+
+      // The error boundary should reset and show the fixed content
+      expect(screen.getByText('Fix Error')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should show error details in development mode', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <ErrorBoundary showErrorDetails={true}>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(screen.getByText('Show Error Details')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+      process.env.NODE_ENV = originalEnv;
+    });
+  });
+
+  describe('AuthErrorBoundary', () => {
+    it('should render children when no error occurs', () => {
+      render(
+        <AuthErrorBoundary>
+          <div>Auth content</div>
+        </AuthErrorBoundary>
+      );
+
+      expect(screen.getByText('Auth content')).toBeInTheDocument();
+    });
+
+    it('should render auth-specific fallback when error occurs', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <AuthErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </AuthErrorBoundary>
+      );
+
+      expect(screen.getByText('Authentication Error')).toBeInTheDocument();
+      expect(screen.getByText('Refresh Page')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('FirebaseErrorBoundary', () => {
+    it('should render children when no error occurs', () => {
+      render(
+        <FirebaseErrorBoundary>
+          <div>Firebase content</div>
+        </FirebaseErrorBoundary>
+      );
+
+      expect(screen.getByText('Firebase content')).toBeInTheDocument();
+    });
+
+    it('should render Firebase-specific fallback when error occurs', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(
+        <FirebaseErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </FirebaseErrorBoundary>
+      );
+
+      expect(screen.getByText('Connection Error')).toBeInTheDocument();
+      expect(screen.getByText('Retry Connection')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('useErrorHandler Hook', () => {
+    it('should capture and throw errors', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Test the hook directly without ErrorBoundary wrapper
+      const TestComponent = () => {
+        const { captureError } = useErrorHandler();
+
+        React.useEffect(() => {
+          // Trigger error on mount
+          captureError(new Error('Hook error'));
+        }, [captureError]);
+
+        return <div>Hook test component</div>;
+      };
+
+      expect(() => {
+        render(<TestComponent />);
+      }).toThrow('Hook error');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('withErrorBoundary HOC', () => {
+    it('should wrap component with error boundary', () => {
+      const TestComponent = () => <div>Test component</div>;
+      const WrappedComponent = withErrorBoundary(TestComponent);
+
+      render(<WrappedComponent />);
+
+      expect(screen.getByText('Test component')).toBeInTheDocument();
+    });
+
+    it('should handle errors in wrapped component', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const ErrorComponent = () => {
+        throw new Error('Wrapped component error');
+      };
+
+      const WrappedComponent = withErrorBoundary(ErrorComponent);
+
+      render(<WrappedComponent />);
+
+      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Error Reporting', () => {
+    it('should log error reports', () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      render(
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error Report:',
+        expect.objectContaining({
+          message: 'Test error',
+          timestamp: expect.any(String),
+          url: expect.any(String),
+        })
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+});
