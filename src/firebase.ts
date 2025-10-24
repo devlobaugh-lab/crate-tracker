@@ -1,7 +1,13 @@
-import { initializeApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, Firestore, enableNetwork, disableNetwork, clearIndexedDbPersistence } from "firebase/firestore";
-import { FirebaseConfig, ImportMetaEnv } from './types';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
+import {
+  getFirestore,
+  Firestore,
+  enableNetwork,
+  disableNetwork,
+  clearIndexedDbPersistence,
+} from 'firebase/firestore';
+import { FirebaseConfig } from './types';
 
 const firebaseConfig: FirebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -9,7 +15,7 @@ const firebaseConfig: FirebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Validate that all required environment variables are present
@@ -19,7 +25,7 @@ const requiredEnvVars = [
   'VITE_FIREBASE_PROJECT_ID',
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID'
+  'VITE_FIREBASE_APP_ID',
 ] as const;
 
 const missingEnvVars = requiredEnvVars.filter((envVar: string) => !import.meta.env[envVar]);
@@ -51,7 +57,10 @@ export async function enableOfflinePersistence(): Promise<void> {
     try {
       await enableNetwork(db);
     } catch (networkError) {
-      console.warn('Failed to enable network after persistence error:', (networkError as Error).message);
+      console.warn(
+        'Failed to enable network after persistence error:',
+        (networkError as Error).message
+      );
     }
   }
 }
@@ -94,28 +103,32 @@ enableOfflinePersistence();
 // Global error handler for Firebase errors - comprehensive approach
 const originalError = console.error;
 const originalWarn = console.warn;
-const originalLog = console.log;
+// const originalLog = console.log;
 
 console.error = (...args: any[]) => {
-  if (args[1] && typeof args[1] === 'string' && (
-    args[1].includes('FirebaseError') ||
-    args[0].includes('@firebase/firestore') ||
-    args[1].includes('Quota exceeded') ||
-    args[1].includes('resource-exhausted') ||
-    args[1].includes('net::ERR_BLOCKED_BY_CLIENT') ||
-    args[1].includes('channel?VER=8')
-  )) {
+  if (
+    args[1] &&
+    typeof args[1] === 'string' &&
+    (args[1].includes('FirebaseError') ||
+      args[0].includes('@firebase/firestore') ||
+      args[1].includes('Quota exceeded') ||
+      args[1].includes('resource-exhausted') ||
+      args[1].includes('net::ERR_BLOCKED_BY_CLIENT') ||
+      args[1].includes('channel?VER=8'))
+  ) {
     console.log('🚨 Global Firebase error handler caught:', ...args);
 
     // If it's a quota error or blocked request, treat as offline scenario
-    if (args[1].includes('resource-exhausted') ||
-        args[1].includes('Quota exceeded') ||
-        args[1].includes('net::ERR_BLOCKED_BY_CLIENT') ||
-        args[1].includes('channel?VER=8')) {
+    if (
+      args[1].includes('resource-exhausted') ||
+      args[1].includes('Quota exceeded') ||
+      args[1].includes('net::ERR_BLOCKED_BY_CLIENT') ||
+      args[1].includes('channel?VER=8')
+    ) {
       console.log('🚨 Firebase operation blocked or failed - switching to offline mode');
       // Dispatch custom event to notify the app
       const event = new CustomEvent('firebase-operation-blocked', {
-        detail: { error: args[1], timestamp: new Date().toISOString(), type: 'blocked' }
+        detail: { error: args[1], timestamp: new Date().toISOString(), type: 'blocked' },
       });
       console.log('🚨 Dispatching blocked operation event:', event);
       window.dispatchEvent(event);
@@ -126,10 +139,11 @@ console.error = (...args: any[]) => {
 
 console.warn = (...args: any[]) => {
   // Also catch Firebase warnings
-  if (args[0] && typeof args[0] === 'string' && (
-    args[0].includes('@firebase/firestore') ||
-    args[0].includes('Firestore')
-  )) {
+  if (
+    args[0] &&
+    typeof args[0] === 'string' &&
+    (args[0].includes('@firebase/firestore') || args[0].includes('Firestore'))
+  ) {
     console.log('🚨 Global Firebase warning caught:', ...args);
   }
   originalWarn.apply(console, args);
@@ -138,10 +152,10 @@ console.warn = (...args: any[]) => {
 // Add global unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
   console.log('🚨 Unhandled promise rejection:', event.reason);
-  if (event.reason && (
-    event.reason.code === 'resource-exhausted' ||
-    event.reason.message?.includes('Quota exceeded')
-  )) {
+  if (
+    event.reason &&
+    (event.reason.code === 'resource-exhausted' || event.reason.message?.includes('Quota exceeded'))
+  ) {
     console.log('🚨 Quota exceeded error caught globally');
     window.dispatchEvent(new CustomEvent('firebase-quota-exceeded'));
   }

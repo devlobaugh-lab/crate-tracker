@@ -1,15 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  enableOfflinePersistence,
+  // enableOfflinePersistence,
   checkNetworkStatus,
   forceOfflineMode,
-  clearPersistence
+  clearPersistence,
 } from './firebase';
-import {
-  enableNetwork,
-  disableNetwork,
-  clearIndexedDbPersistence
-} from 'firebase/firestore';
+import { enableNetwork, disableNetwork, clearIndexedDbPersistence } from 'firebase/firestore';
 
 // Mock Firebase modules
 vi.mock('firebase/app', () => ({
@@ -159,7 +155,7 @@ describe('Firebase Utilities', () => {
 
   describe('Global Error Handling', () => {
     it('should handle quota exceeded errors', () => {
-      const originalError = console.error;
+      // const originalError = console.error;
       const eventSpy = vi.spyOn(window, 'dispatchEvent');
 
       // Simulate a quota exceeded error
@@ -172,7 +168,7 @@ describe('Firebase Utilities', () => {
     });
 
     it('should handle blocked operation errors', () => {
-      const originalError = console.error;
+      // const originalError = console.error;
       const eventSpy = vi.spyOn(window, 'dispatchEvent');
 
       // Simulate a blocked operation error
@@ -190,12 +186,12 @@ describe('Firebase Utilities', () => {
       // Simulate an unhandled promise rejection with quota error
       const quotaError = {
         code: 'resource-exhausted',
-        message: 'Quota exceeded'
+        message: 'Quota exceeded',
       };
 
       // Trigger the unhandled rejection event
       const event = new CustomEvent('unhandledrejection', {
-        detail: quotaError
+        detail: quotaError,
       } as any);
       window.dispatchEvent(event);
 

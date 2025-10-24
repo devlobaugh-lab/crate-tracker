@@ -1,20 +1,23 @@
-import React, { useEffect, useState } from 'react'
-import { AuthProvider, useAuth } from './AuthContext.tsx'
-import Login from './Login.tsx'
-import UserProfile from './UserProfile.tsx'
-import { Cog6ToothIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline'
-import { ErrorBoundary, AuthErrorBoundary, FirebaseErrorBoundary } from './components/common/ErrorBoundary.tsx'
+import { useEffect, useState } from 'react';
+import { AuthProvider, useAuth } from './AuthContext.tsx';
+import Login from './Login.tsx';
+import UserProfile from './UserProfile.tsx';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import {
+  ErrorBoundary,
+  AuthErrorBoundary,
+  FirebaseErrorBoundary,
+} from './components/common/ErrorBoundary.tsx';
 
 // Import extracted components and utilities
-import SmallRow from './components/common/SmallRow.tsx'
-import ConnectionStatus from './components/common/ConnectionStatus.tsx'
-import ConfigView from './components/views/ConfigView.tsx'
-import IntroView from './components/views/IntroView.tsx'
-import CrateGrid from './components/crate/CrateGrid.tsx'
-import { useCratePattern } from './hooks/useCratePattern.ts'
-import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts'
-import { APP_VERSION, CRATE_TYPES } from './utils/constants.ts'
-import { User, Crate } from './types/index.ts'
+import SmallRow from './components/common/SmallRow.tsx';
+import ConnectionStatus from './components/common/ConnectionStatus.tsx';
+import ConfigView from './components/views/ConfigView.tsx';
+import IntroView from './components/views/IntroView.tsx';
+import CrateGrid from './components/crate/CrateGrid.tsx';
+import { useCratePattern } from './hooks/useCratePattern.ts';
+import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts';
+import { APP_VERSION, CRATE_TYPES } from './utils/constants.ts';
 
 // Define the state interface
 interface AppState {
@@ -27,14 +30,32 @@ interface AppState {
 
 // AppContent component that contains the main app logic
 function AppContent() {
-  const { currentUser, userData, saveUserData, setIgnoreRemoteChanges, isOnline, syncStatus, actionQueue, saveOfflineData, clearOfflineData, loadOfflineData } = useAuth();
+  const {
+    currentUser,
+    userData,
+    saveUserData,
+    setIgnoreRemoteChanges,
+    isOnline,
+    syncStatus,
+    actionQueue,
+    saveOfflineData,
+    clearOfflineData,
+    loadOfflineData,
+  } = useAuth();
 
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   const [state, setState] = useState<AppState>(() => {
     console.log('🚀 App initializing - checking data sources');
-    console.log('🚀 Current context state - isOnline:', isOnline, 'syncStatus:', syncStatus, 'currentUser:', currentUser?.uid?.substring(0, 8));
+    console.log(
+      '🚀 Current context state - isOnline:',
+      isOnline,
+      'syncStatus:',
+      syncStatus,
+      'currentUser:',
+      currentUser?.uid?.substring(0, 8)
+    );
 
     // Check if we're in offline mode and should prioritize localStorage
     if (!isOnline && syncStatus === 'error' && currentUser) {
@@ -60,7 +81,13 @@ function AppContent() {
           console.log('  - Crates:', data.allCrates.length);
           console.log('  - Full data:', data);
 
-          console.log('🔄 Initializing with offline data (wins:', data.config.wins, ', crates:', data.allCrates.length, ')');
+          console.log(
+            '🔄 Initializing with offline data (wins:',
+            data.config.wins,
+            ', crates:',
+            data.allCrates.length,
+            ')'
+          );
           return data;
         } else {
           console.log('ℹ️ No valid offline data found in localStorage');
@@ -158,7 +185,7 @@ function AppContent() {
         setSaveTimeout(null);
       }
     };
-  }, [state, saveUserData, currentUser, isOnline, syncStatus]);
+  }, [state, saveUserData, currentUser, isOnline, syncStatus, saveTimeout]);
 
   // Use pattern hook after state is defined
   const { lastTen, futureTen } = useCratePattern(state?.allCrates || []);
@@ -194,34 +221,40 @@ function AppContent() {
     // Let Firebase's natural debouncing and sync handle it
   }
 
-  const [view, setView] = (state?.allCrates?.length || 0) == 0 ? useState<'intro' | 'main' | 'config'>('intro') : useState<'intro' | 'main' | 'config'>('main');
+  const [view, setView] = useState<'intro' | 'main' | 'config'>(
+    (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
+  );
 
   if (!currentUser) {
     return <Login />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col">
-      <header className="flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4">
-        <h1 className="text-2xl font-bold text-white tracking-wide">Crate Tracker</h1>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-200 font-semibold">Wins: {state?.config?.wins || 0}</div>
+    <div className='min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col'>
+      <header className='flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4'>
+        <h1 className='text-2xl font-bold text-white tracking-wide'>Crate Tracker</h1>
+        <div className='flex items-center gap-4'>
+          <div className='text-sm text-gray-200 font-semibold'>
+            Wins: {state?.config?.wins || 0}
+          </div>
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
-      <div className="flex justify-end pr-2 mb-2">
+      <div className='flex justify-end pr-2 mb-2'>
         <button
-          className="pl-2 text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+          className='pl-2 text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={() => setView('config')}
-          >
-          <Cog6ToothIcon className="w-5 h-5" />
+        >
+          <Cog6ToothIcon className='w-5 h-5' />
         </button>
       </div>
 
       <ErrorBoundary
         fallback={
-          <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
-            <p className="text-red-400 text-sm">Error loading main content. Please refresh the page.</p>
+          <div className='p-4 bg-red-900/20 border border-red-500 rounded-lg'>
+            <p className='text-red-400 text-sm'>
+              Error loading main content. Please refresh the page.
+            </p>
           </div>
         }
       >
@@ -229,20 +262,22 @@ function AppContent() {
           <main>
             <ErrorBoundary
               fallback={
-                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                <div className='p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs'>
                   Error loading crate history
                 </div>
               }
             >
-              <section className="mb-4">
-                <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Last 10 crates</div>
+              <section className='mb-4'>
+                <div className='text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
+                  Last 10 crates
+                </div>
                 <SmallRow crates={lastTen} />
               </section>
             </ErrorBoundary>
 
             <ErrorBoundary
               fallback={
-                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                <div className='p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs'>
                   Error loading crate grid
                 </div>
               }
@@ -252,13 +287,15 @@ function AppContent() {
 
             <ErrorBoundary
               fallback={
-                <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+                <div className='p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs'>
                   Error loading predictions
                 </div>
               }
             >
-              <section className="mb-2">
-                <div className="text-xs text-gray-300 mb-2 font-semibold tracking-wide">Next 10 (predictions)</div>
+              <section className='mb-2'>
+                <div className='text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
+                  Next 10 (predictions)
+                </div>
                 <SmallRow crates={futureTen} />
               </section>
             </ErrorBoundary>
@@ -268,8 +305,10 @@ function AppContent() {
         {view === 'config' && (
           <ErrorBoundary
             fallback={
-              <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
-                <p className="text-red-400 text-sm">Error loading configuration. Please refresh the page.</p>
+              <div className='p-4 bg-red-900/20 border border-red-500 rounded-lg'>
+                <p className='text-red-400 text-sm'>
+                  Error loading configuration. Please refresh the page.
+                </p>
               </div>
             }
           >
@@ -299,14 +338,14 @@ function AppContent() {
         {view === 'intro' && (
           <ErrorBoundary
             fallback={
-              <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg">
-                <p className="text-red-400 text-sm">Error loading intro view. Please refresh the page.</p>
+              <div className='p-4 bg-red-900/20 border border-red-500 rounded-lg'>
+                <p className='text-red-400 text-sm'>
+                  Error loading intro view. Please refresh the page.
+                </p>
               </div>
             }
           >
-            <IntroView
-              onBack={() => setView('main')}
-            />
+            <IntroView onBack={() => setView('main')} />
           </ErrorBoundary>
         )}
       </ErrorBoundary>
@@ -314,30 +353,30 @@ function AppContent() {
       {/* User Profile Section - Bottom of App */}
       <ErrorBoundary
         fallback={
-          <div className="p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs">
+          <div className='p-2 bg-yellow-900/20 border border-yellow-500 rounded text-yellow-400 text-xs'>
             Error loading user profile
           </div>
         }
       >
-        <div className="mt-6 mb-4">
+        <div className='mt-6 mb-4'>
           <UserProfile />
         </div>
       </ErrorBoundary>
 
-      <footer className="flex text-xs text-gray-500 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span>
-            {currentUser ? '' : 'Sign in to save your data to the cloud'}
-          </span>
+      <footer className='flex text-xs text-gray-500 items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <span>{currentUser ? '' : 'Sign in to save your data to the cloud'}</span>
           {currentUser && (
-            <div className="flex items-center gap-1">
-              <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} />
+            <div className='flex items-center gap-1'>
+              <ConnectionStatus
+                isOnline={isOnline}
+                syncStatus={syncStatus}
+                actionQueue={actionQueue}
+              />
             </div>
           )}
         </div>
-        <div>
-          App version {APP_VERSION}
-        </div>
+        <div>App version {APP_VERSION}</div>
       </footer>
     </div>
   );
@@ -363,5 +402,4 @@ function App() {
   );
 }
 
-
-export default App
+export default App;

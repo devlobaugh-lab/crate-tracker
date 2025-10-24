@@ -22,7 +22,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
         futureTen: [],
         predictions: [],
         lastTenValues: [],
-        predictionValues: []
+        predictionValues: [],
       };
     }
 
@@ -39,7 +39,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
       futureTen,
       predictions,
       lastTenValues,
-      predictionValues: predictions
+      predictionValues: predictions,
     };
   }, [allCrates]);
 

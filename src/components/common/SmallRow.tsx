@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * SmallRow component for displaying a row of crate indicators
  */
@@ -15,11 +13,7 @@ interface SmallRowProps {
 
 function SmallRow({ crates = [], className = '' }: SmallRowProps) {
   if (crates.length === 0) {
-    return (
-      <div className={`text-center text-gray-400 italic py-1 ${className}`}>
-        No data
-      </div>
-    );
+    return <div className={`text-center text-gray-400 italic py-1 ${className}`}>No data</div>;
   }
 
   return (

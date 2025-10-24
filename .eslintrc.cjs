@@ -14,16 +14,30 @@ module.exports = {
     'prettier',
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules/', '*.config.js', 'src/test/ci-mock.cjs'],
-  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaFeatures: {
       jsx: true,
     },
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: ['./tsconfig.json'],
-    tsconfigRootDir: __dirname,
   },
+  overrides: [
+    {
+      files: ['*.ts', '*.tsx'],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        project: ['./tsconfig.json'],
+        tsconfigRootDir: __dirname,
+      },
+    },
+    {
+      files: ['*.js', '*.jsx'],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        project: false,
+      },
+    },
+  ],
   plugins: ['react', '@typescript-eslint'],
   rules: {
     // TypeScript specific rules

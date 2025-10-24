@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext.tsx';
 
 /**
@@ -20,8 +20,14 @@ interface LocalConfig {
   gpWins: number;
 }
 
-function ConfigView({ config, allCrates, onChange, onBack, setIgnoreRemoteChanges }: ConfigViewProps) {
-  const { currentUser, saveUserData, exportUserData, importUserData, isOnline, syncStatus } = useAuth();
+function ConfigView({
+  config,
+  allCrates: _allCrates,
+  onChange,
+  onBack,
+  setIgnoreRemoteChanges,
+}: ConfigViewProps) {
+  const { currentUser, saveUserData, exportUserData, importUserData } = useAuth();
   const [local, setLocal] = useState<LocalConfig>(config || { wins: 0, gpWins: 0 });
   const [importStatus, setImportStatus] = useState<string>('');
 
@@ -87,8 +93,8 @@ function ConfigView({ config, allCrates, onChange, onBack, setIgnoreRemoteChange
         allCrates: importedData.allCrates,
         config: {
           wins: importedData.config.wins || 0,
-          gpWins: importedData.config.gpWins || 0
-        }
+          gpWins: importedData.config.gpWins || 0,
+        },
       };
 
       // Use onChange with importData parameter to restore complete state
@@ -106,83 +112,84 @@ function ConfigView({ config, allCrates, onChange, onBack, setIgnoreRemoteChange
   }
 
   return (
-    <div className="bg-gray-700 px-6 py-4 rounded-2xl shadow-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white tracking-wide">Config</h2>
+    <div className='bg-gray-700 px-6 py-4 rounded-2xl shadow-lg'>
+      <div className='flex items-center justify-between mb-4'>
+        <h2 className='text-xl font-bold text-white tracking-wide'>Config</h2>
         <button
-          className="text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200"
+          className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={onBack}
         >
           Back
         </button>
       </div>
 
-      <label className="block mb-4">
-        <div className="text-xs text-gray-300 font-semibold">Number of wins</div>
+      <label className='block mb-4'>
+        <div className='text-xs text-gray-300 font-semibold'>Number of wins</div>
         <input
-          type="number"
+          type='number'
           value={local.wins}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocal({...local, wins: Number(e.target.value)})}
-          className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setLocal({ ...local, wins: Number(e.target.value) })
+          }
+          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
         />
       </label>
 
-      <label className="block mb-4">
-        <div className="text-xs text-gray-300 font-semibold">GP wins</div>
+      <label className='block mb-4'>
+        <div className='text-xs text-gray-300 font-semibold'>GP wins</div>
         <input
-          type="number"
+          type='number'
           value={local.gpWins}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocal({...local, gpWins: Number(e.target.value)})}
-          className="mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setLocal({ ...local, gpWins: Number(e.target.value) })
+          }
+          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
         />
       </label>
 
-      <div className="flex gap-4">
+      <div className='flex gap-4'>
         <button
           onClick={commit}
-          className="flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200"
+          className='flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm shadow hover:bg-blue-700 transition-colors duration-200'
         >
           Save
         </button>
         <button
           onClick={onBack}
-          className="flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm shadow hover:bg-gray-700 transition-colors duration-200"
+          className='flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm shadow hover:bg-gray-700 transition-colors duration-200'
         >
           Cancel
         </button>
       </div>
 
-      <div className="mt-6">
-        <div className="text-sm text-gray-300 mb-3 font-semibold text-center">Data Management</div>
-        <div className="grid grid-cols-2 gap-3 mb-2">
+      <div className='mt-6'>
+        <div className='text-sm text-gray-300 mb-3 font-semibold text-center'>Data Management</div>
+        <div className='grid grid-cols-2 gap-3 mb-2'>
           <button
             onClick={handleExport}
-            className="py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200"
+            className='py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200'
           >
             Export Data
           </button>
-          <label className="py-2 px-3 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow hover:bg-purple-700 transition-colors duration-200 cursor-pointer text-center">
+          <label className='py-2 px-3 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow hover:bg-purple-700 transition-colors duration-200 cursor-pointer text-center'>
             Import Data
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-            />
+            <input type='file' accept='.json' onChange={handleImport} className='hidden' />
           </label>
           <button
             onClick={() => reset()}
-            className="py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200"
+            className='py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200'
           >
             Reset All Values
           </button>
         </div>
         {importStatus && (
-          <div className={`text-sm p-2 rounded-lg text-center ${
-            importStatus.includes('failed') || importStatus.includes('Failed')
-              ? 'bg-red-600 text-white'
-              : 'bg-green-600 text-white'
-          }`}>
+          <div
+            className={`text-sm p-2 rounded-lg text-center ${
+              importStatus.includes('failed') || importStatus.includes('Failed')
+                ? 'bg-red-600 text-white'
+                : 'bg-green-600 text-white'
+            }`}
+          >
             {importStatus}
           </div>
         )}
