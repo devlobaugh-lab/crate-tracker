@@ -1,9 +1,8 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, waitFor } from '@testing-library/react';
+// import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from './AuthContext';
-import { auth, db } from './firebase';
+// import { auth, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -39,23 +38,27 @@ const TestComponent = () => {
   const auth = useAuth();
   return (
     <div>
-      <div data-testid="user">{auth.currentUser?.email || 'No user'}</div>
-      <div data-testid="loading">{auth.loading ? 'Loading' : 'Not loading'}</div>
-      <div data-testid="online">{auth.isOnline ? 'Online' : 'Offline'}</div>
-      <div data-testid="sync-status">{auth.syncStatus}</div>
-      <button onClick={auth.login} data-testid="login-btn">Login</button>
-      <button onClick={auth.logout} data-testid="logout-btn">Logout</button>
+      <div data-testid='user'>{auth.currentUser?.email || 'No user'}</div>
+      <div data-testid='loading'>{auth.loading ? 'Loading' : 'Not loading'}</div>
+      <div data-testid='online'>{auth.isOnline ? 'Online' : 'Offline'}</div>
+      <div data-testid='sync-status'>{auth.syncStatus}</div>
+      <button onClick={auth.login} data-testid='login-btn'>
+        Login
+      </button>
+      <button onClick={auth.logout} data-testid='logout-btn'>
+        Logout
+      </button>
     </div>
   );
 };
 
 describe('AuthContext', () => {
-  const mockUser = {
-    uid: 'test-uid',
-    email: 'test@example.com',
-    displayName: 'Test User',
-    photoURL: 'https://example.com/photo.jpg',
-  };
+  // const mockUser = {
+  //   uid: 'test-uid',
+  //   email: 'test@example.com',
+  //   displayName: 'Test User',
+  //   photoURL: 'https://example.com/photo.jpg',
+  // };
 
   const mockFirebaseUser = {
     uid: 'test-uid',
@@ -86,7 +89,7 @@ describe('AuthContext', () => {
 
       // Mock onAuthStateChanged to simulate user being signed in
       const mockOnAuthStateChanged = vi.mocked(onAuthStateChanged);
-      mockOnAuthStateChanged.mockImplementation((auth: any, callback: any) => {
+      mockOnAuthStateChanged.mockImplementation((_auth: any, callback: any) => {
         // Simulate immediate sign in
         setTimeout(() => callback(mockFirebaseUser), 0);
         return () => {};
@@ -131,7 +134,7 @@ describe('AuthContext', () => {
 
       // Mock onAuthStateChanged to simulate user being signed in first
       const mockOnAuthStateChanged = vi.mocked(onAuthStateChanged);
-      mockOnAuthStateChanged.mockImplementation((auth: any, callback: any) => {
+      mockOnAuthStateChanged.mockImplementation((_auth: any, callback: any) => {
         // Simulate immediate sign in
         setTimeout(() => callback(mockFirebaseUser), 0);
         return () => {};
@@ -203,8 +206,8 @@ describe('AuthContext', () => {
       } as any);
 
       // Test the mocked functions directly
-      const docRef = mockDoc('test-collection', 'test-doc');
-      const result = await mockGetDoc(docRef as any);
+      const docRef = (mockDoc as any)('test-collection', 'test-doc');
+      const result = await mockGetDoc(docRef);
 
       expect(result.exists()).toBe(true);
       expect(result.data()).toEqual(mockUserData);
@@ -220,11 +223,11 @@ describe('AuthContext', () => {
       mockDoc.mockReturnValue(mockDocRef);
       mockSetDoc.mockRejectedValue({
         code: 'resource-exhausted',
-        message: 'Quota exceeded'
+        message: 'Quota exceeded',
       });
 
       // Test the saveUserData function directly
-      const { AuthProvider } = await import('./AuthContext');
+      // const { AuthProvider } = await import('./AuthContext');
 
       // We need to create a test that simulates the quota error scenario
       // This would require more complex setup to test the internal state changes
@@ -245,7 +248,7 @@ describe('AuthContext', () => {
 
       expect(() => {
         render(<TestComponent />);
-      }).toThrow('Cannot read properties of undefined (reading \'currentUser\')');
+      }).toThrow('useAuth must be used within an AuthProvider');
 
       consoleSpy.mockRestore();
     });

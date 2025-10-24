@@ -71,8 +71,7 @@ export function nextPatternValues(userInput: string[], masterPattern: string): s
  */
 export function getCrateTypesFromValues(crateValues: string[]): CrateType[] {
   return crateValues.map((value: string) => {
-    const crateType = CRATE_TYPES.find((t: CrateType) => t.value === value);
-    return crateType || CRATE_TYPES.find((t: CrateType) => t.value === '?')!;
+    return CRATE_TYPES.find((t: CrateType) => t.value === value) ?? CRATE_TYPES[5]; // Index 5 is Unknown
   });
 }
 

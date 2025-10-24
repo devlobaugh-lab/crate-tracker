@@ -1,9 +1,8 @@
-import React from 'react';
 import {
   CheckCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-  WifiIcon
+  WifiIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -19,15 +18,15 @@ function ConnectionStatus({ isOnline, syncStatus, actionQueue }: ConnectionStatu
   const getStatusIcon = () => {
     switch (syncStatus) {
       case 'synced':
-        return <CheckCircleIcon className="w-4 h-4 text-green-400" />;
+        return <CheckCircleIcon className='w-4 h-4 text-green-400' />;
       case 'syncing':
-        return <ClockIcon className="w-4 h-4 text-blue-400 animate-pulse" />;
+        return <ClockIcon className='w-4 h-4 text-blue-400 animate-pulse' />;
       case 'pending':
-        return <ClockIcon className="w-4 h-4 text-yellow-400" />;
+        return <ClockIcon className='w-4 h-4 text-yellow-400' />;
       case 'error':
-        return <ExclamationTriangleIcon className="w-4 h-4 text-red-400" />;
+        return <ExclamationTriangleIcon className='w-4 h-4 text-red-400' />;
       default:
-        return <WifiIcon className="w-4 h-4 text-gray-400" />;
+        return <WifiIcon className='w-4 h-4 text-gray-400' />;
     }
   };
 
@@ -50,15 +49,21 @@ function ConnectionStatus({ isOnline, syncStatus, actionQueue }: ConnectionStatu
   };
 
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className='flex items-center gap-2 text-xs'>
       {getStatusIcon()}
-      <span className={`font-medium ${
-        !isOnline ? 'text-red-400' :
-        syncStatus === 'error' ? 'text-red-400' :
-        syncStatus === 'pending' ? 'text-yellow-400' :
-        syncStatus === 'syncing' ? 'text-blue-400' :
-        'text-green-400'
-      }`}>
+      <span
+        className={`font-medium ${
+          !isOnline
+            ? 'text-red-400'
+            : syncStatus === 'error'
+              ? 'text-red-400'
+              : syncStatus === 'pending'
+                ? 'text-yellow-400'
+                : syncStatus === 'syncing'
+                  ? 'text-blue-400'
+                  : 'text-green-400'
+        }`}
+      >
         {getStatusText()}
       </span>
     </div>

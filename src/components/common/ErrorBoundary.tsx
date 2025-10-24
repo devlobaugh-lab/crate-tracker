@@ -89,65 +89,54 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full space-y-8">
-            <div className="text-center">
-              <div className="mx-auto h-16 w-16 text-red-500">
-                <svg
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-16 w-16"
-                >
+        <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+          <div className='max-w-md w-full space-y-8'>
+            <div className='text-center'>
+              <div className='mx-auto h-16 w-16 text-red-500'>
+                <svg fill='none' viewBox='0 0 24 24' stroke='currentColor' className='h-16 w-16'>
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
                     strokeWidth={1.5}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
                   />
                 </svg>
               </div>
-              <h1 className="mt-4 text-3xl font-bold text-gray-900">
-                Something went wrong
-              </h1>
-              <p className="mt-2 text-sm text-gray-600">
-                We're sorry, but something unexpected happened. Please try again.
+              <h1 className='mt-4 text-3xl font-bold text-gray-900'>Something went wrong</h1>
+              <p className='mt-2 text-sm text-gray-600'>
+                We are sorry, but something unexpected happened. Please try again.
               </p>
 
-              <div className="mt-6 space-y-3">
+              <div className='mt-6 space-y-3'>
                 <button
                   onClick={this.handleRetry}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 >
                   Try Again
                 </button>
 
                 <button
                   onClick={this.handleReload}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className='w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 >
                   Reload Page
                 </button>
               </div>
 
               {this.props.showErrorDetails && this.state.error && (
-                <details className="mt-6 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                <details className='mt-6 text-left'>
+                  <summary className='cursor-pointer text-sm text-gray-500 hover:text-gray-700'>
                     Show Error Details
                   </summary>
-                  <div className="mt-2 p-4 bg-gray-100 rounded-md text-xs font-mono text-gray-800 overflow-auto max-h-40">
-                    <div className="font-semibold text-red-600 mb-2">
+                  <div className='mt-2 p-4 bg-gray-100 rounded-md text-xs font-mono text-gray-800 overflow-auto max-h-40'>
+                    <div className='font-semibold text-red-600 mb-2'>
                       {this.state.error.name}: {this.state.error.message}
                     </div>
-                    <pre className="whitespace-pre-wrap">
-                      {this.state.error.stack}
-                    </pre>
+                    <pre className='whitespace-pre-wrap'>{this.state.error.stack}</pre>
                     {this.state.errorInfo && (
-                      <div className="mt-2 pt-2 border-t border-gray-300">
-                        <div className="font-semibold text-red-600 mb-1">
-                          Component Stack:
-                        </div>
-                        <pre className="whitespace-pre-wrap">
+                      <div className='mt-2 pt-2 border-t border-gray-300'>
+                        <div className='font-semibold text-red-600 mb-1'>Component Stack:</div>
+                        <pre className='whitespace-pre-wrap'>
                           {this.state.errorInfo.componentStack}
                         </pre>
                       </div>
@@ -206,17 +195,15 @@ export function withErrorBoundary<P extends object>(
 export const AuthErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => (
   <ErrorBoundary
     fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Authentication Error
-          </h2>
-          <p className="text-gray-600 mb-6">
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='max-w-md w-full text-center'>
+          <h2 className='text-2xl font-bold text-gray-900 mb-4'>Authentication Error</h2>
+          <p className='text-gray-600 mb-6'>
             There was a problem with authentication. Please refresh the page and try again.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            className='bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700'
           >
             Refresh Page
           </button>
@@ -236,17 +223,16 @@ export const AuthErrorBoundary: React.FC<{ children: ReactNode }> = ({ children 
 export const FirebaseErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => (
   <ErrorBoundary
     fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Connection Error
-          </h2>
-          <p className="text-gray-600 mb-6">
-            We're having trouble connecting to our services. Please check your internet connection and try again.
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='max-w-md w-full text-center'>
+          <h2 className='text-2xl font-bold text-gray-900 mb-4'>Connection Error</h2>
+          <p className='text-gray-600 mb-6'>
+            We are having trouble connecting to our services. Please check your internet connection
+            and try again.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            className='bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700'
           >
             Retry Connection
           </button>

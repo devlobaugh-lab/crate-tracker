@@ -17,7 +17,7 @@ export const CRATE_TYPES: CrateType[] = [
   { key: 'Platinum', color: 'bg-gray-400', label: 'Platinum', value: 'P' },
   { key: 'Legendary', color: 'bg-amber-700', label: 'Legendary', value: 'L' },
   { key: 'GP', color: 'bg-blue-500', label: 'GP', value: 'X' },
-  { key: 'Unknown', color: 'bg-white', label: 'Unknown', value: '?'}
+  { key: 'Unknown', color: 'bg-white', label: 'Unknown', value: '?' },
 ];
 
 // Master pattern for crate predictions (F1 Clash pattern)
