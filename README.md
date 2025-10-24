@@ -1,5 +1,7 @@
 # Crate Tracker (React + Vite + Tailwind)
 
+![CI](https://github.com/devlobaugh-lab/crate-tracker/workflows/CI/badge.svg)
+
 A simple mobile-first web app for tracking crate openings in a game. 
 Data Storage and Auth services provided by Firebase
 
