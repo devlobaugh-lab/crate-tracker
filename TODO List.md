@@ -2,16 +2,16 @@
 
 ## Phase 1: GitHub Actions CI
 
-- [ ] Set up GitHub repository for crate-tracker-vite
-- [ ] Create .github/workflows directory
-- [ ] Configure CI workflow file (.github/workflows/ci.yml)
-  - [ ] Install Node.js and dependencies
-  - [ ] Run linting (ESLint)
-  - [ ] Run tests (if any exist)
+- [x] Set up GitHub repository for crate-tracker-vite
+- [x] Create .github/workflows directory
+- [x] Configure CI workflow file (.github/workflows/ci.yml)
+  - [x] Install Node.js and dependencies
+  - [x] Run linting (ESLint)
+  - [x] Run tests (if any exist)
   - [ ] Build the project with Vite
   - [ ] Upload build artifacts (optional)
 - [ ] Test CI workflow locally or push to trigger
-- [ ] Add badges to README.md for CI status
+- [x] Add badges to README.md for CI status
 
 ## Phase 2: GitHub Actions Deploy to Firebase
 
