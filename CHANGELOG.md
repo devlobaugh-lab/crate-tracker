@@ -1,5 +1,7 @@
 # Changelog
 
+## Ver 1.3.2 - 10/22/2025 - Added automated tests, linting, and type checks. Added setup for github CI and deployment
+/
 ## Ver 1.3.1 - 10/20/2025 - Implement comprehensive testing and get all test successful
 
 **✅ Error Boundary System - Fully Functional:**
