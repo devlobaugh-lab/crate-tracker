@@ -10,16 +10,16 @@
   - [x] Run tests (if any exist)
   - [ ] Build the project with Vite
   - [ ] Upload build artifacts (optional)
-- [ ] Test CI workflow locally or push to trigger
+- [x] Test CI workflow locally or push to trigger
 - [x] Add badges to README.md for CI status
 
 ## Phase 2: GitHub Actions Deploy to Firebase
 
 - [ ] Configure Firebase CLI in CI
-  - [ ] Set up Firebase service account key as secret
+  - [x] Set up Firebase service account key as secret
   - [ ] Install Firebase CLI in workflow
-- [ ] Update deploy workflow file (.github/workflows/deploy.yml)
-  - [ ] Build the project
+- [x] Update deploy workflow file (.github/workflows/deploy.yml)
+  - [x] Build the project
   - [ ] Deploy to Firebase Hosting
   - [ ] Optionally deploy Firestore rules if needed
 - [ ] Set up deployment triggers (on push to main branch)
