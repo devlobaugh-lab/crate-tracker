@@ -40,6 +40,43 @@ Data Storage and Auth services provided by Firebase
    VITE_FIREBASE_APP_ID=your_app_id
    ```
 
+### Staging Environment Setup
+
+This project supports multiple environments (staging and production) for safer deployments.
+
+#### Creating Firebase Projects
+
+1. **Production Project**: Already exists as `crate-tracker-38b6e`
+2. **Staging Project**: Create a new Firebase project named `crate-tracker-staging`:
+   - Go to [Firebase Console](https://console.firebase.google.com)
+   - Create new project "crate-tracker-staging"
+   - Enable Authentication (Google provider)
+   - Enable Firestore Database
+   - Enable Hosting
+   - Copy Firestore rules and indexes from production project
+
+#### GitHub Secrets Configuration
+
+For staging deployments to work, add the following secrets to your GitHub repository (Settings → Secrets and variables → Actions):
+
+```
+FIREBASE_STAGING_API_KEY=staging_api_key_here
+FIREBASE_STAGING_AUTH_DOMAIN=crate-tracker-staging.firebaseapp.com
+FIREBASE_STAGING_PROJECT_ID=crate-tracker-staging
+FIREBASE_STAGING_STORAGE_BUCKET=crate-tracker-staging.appspot.com
+FIREBASE_STAGING_MESSAGING_SENDER_ID=staging_sender_id_here
+FIREBASE_STAGING_APP_ID=staging_app_id_here
+FIREBASE_STAGING_SERVICE_ACCOUNT=staging_service_account_json_here
+```
+
+#### Development Workflow
+
+- **Development**: Work on feature branches, test locally
+- **Staging**: Push to `staging` branch to deploy to staging environment
+- **Production**: Merge to `main` branch to deploy to production environment
+
+The staging environment will be available at your staging project's hosting URL, allowing you to test changes before they go live.
+
 ### Local Development
 ```bash
 npm install
