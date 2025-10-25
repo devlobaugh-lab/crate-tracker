@@ -1,5 +1,11 @@
 # Changelog
 
+## Ver 1.3.3 - 10/25/2025 - Implement Cleaner Logging System 
+- Created logger utility to abstract log calls and make it easier to use a different logger if wanted
+- Replaced all console.x calls to use logger instead. Logger is still using console for output
+- Set all .log and .debug calls to only show in development mode
+- Set all .warn and .error calls to log in all environments for proper monitoring.
+
 ## Ver 1.3.2 - 10/22/2025 - Added automated tests, linting, and type checks. Added setup for github CI and deployment
 /
 ## Ver 1.3.1 - 10/20/2025 - Implement comprehensive testing and get all test successful
