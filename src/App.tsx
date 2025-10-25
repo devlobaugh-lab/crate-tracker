@@ -8,6 +8,7 @@ import {
   AuthErrorBoundary,
   FirebaseErrorBoundary,
 } from './components/common/ErrorBoundary.tsx';
+import logger from './utils/logger';
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx';
@@ -47,8 +48,8 @@ function AppContent() {
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   const [state, setState] = useState<AppState>(() => {
-    console.log('🚀 App initializing - checking data sources');
-    console.log(
+    logger.log('🚀 App initializing - checking data sources');
+    logger.log(
       '🚀 Current context state - isOnline:',
       isOnline,
       'syncStatus:',
@@ -59,29 +60,29 @@ function AppContent() {
 
     // Check if we're in offline mode and should prioritize localStorage
     if (!isOnline && syncStatus === 'error' && currentUser) {
-      console.log('🔄 App startup in offline mode - prioritizing localStorage');
+      logger.log('🔄 App startup in offline mode - prioritizing localStorage');
 
       try {
         const key = `crate-tracker-offline-${currentUser.uid}`;
-        console.log('🔍 Checking localStorage key:', key);
+        logger.log('🔍 Checking localStorage key:', key);
 
         // Debug: Check all localStorage keys
-        console.log('🔍 All localStorage keys:', Object.keys(localStorage));
+        logger.log('🔍 All localStorage keys:', Object.keys(localStorage));
 
         const savedData = localStorage.getItem(key);
-        console.log('📦 Raw localStorage data for key:', savedData);
+        logger.log('📦 Raw localStorage data for key:', savedData);
 
         if (savedData && savedData !== 'null' && savedData !== 'undefined') {
           const parsedData = JSON.parse(savedData);
           const { data, timestamp } = parsedData;
 
-          console.log('✅ Found offline data:');
-          console.log('  - Timestamp:', timestamp);
-          console.log('  - Wins:', data.config.wins);
-          console.log('  - Crates:', data.allCrates.length);
-          console.log('  - Full data:', data);
+          logger.log('✅ Found offline data:');
+          logger.log('  - Timestamp:', timestamp);
+          logger.log('  - Wins:', data.config.wins);
+          logger.log('  - Crates:', data.allCrates.length);
+          logger.log('  - Full data:', data);
 
-          console.log(
+          logger.log(
             '🔄 Initializing with offline data (wins:',
             data.config.wins,
             ', crates:',
@@ -90,22 +91,22 @@ function AppContent() {
           );
           return data;
         } else {
-          console.log('ℹ️ No valid offline data found in localStorage');
-          console.log('📦 localStorage value was:', savedData);
+          logger.log('ℹ️ No valid offline data found in localStorage');
+          logger.log('📦 localStorage value was:', savedData);
         }
       } catch (error) {
-        console.error('❌ Failed to load offline data during initialization:', error);
-        console.error('❌ Error details:', (error as Error).message);
+        logger.error('❌ Failed to load offline data during initialization:', error);
+        logger.error('❌ Error details:', (error as Error).message);
       }
     }
 
     // Use userData if available, otherwise use default empty state
     if (userData) {
-      console.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
+      logger.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
       return userData;
     }
 
-    console.log('🔄 Initializing with default empty state');
+    logger.log('🔄 Initializing with default empty state');
     return { allCrates: [], config: { wins: 0, gpWins: 0 } };
   });
 
@@ -115,10 +116,10 @@ function AppContent() {
   useEffect(() => {
     // Only update state from Firebase if we're truly online and not in error state
     if (userData && isOnline && syncStatus === 'synced') {
-      console.log('📡 Updating state from Firebase real-time data');
+      logger.log('📡 Updating state from Firebase real-time data');
       setState(userData);
     } else {
-      console.log('📡 Ignoring Firebase real-time data - not in online synced state');
+      logger.log('📡 Ignoring Firebase real-time data - not in online synced state');
     }
   }, [userData, isOnline, syncStatus]);
 
