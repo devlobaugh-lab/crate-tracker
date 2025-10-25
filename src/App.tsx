@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UserProfile from './UserProfile.tsx';
@@ -109,7 +109,7 @@ function AppContent() {
     return { allCrates: [], config: { wins: 0, gpWins: 0 } };
   });
 
-  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update state when userData changes (from real-time listener)
   useEffect(() => {
@@ -163,29 +163,29 @@ function AppContent() {
       console.log('📤 State changed, scheduling save...');
 
       // Clear any existing timeout
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
 
       // Set new timeout - this ensures saves happen even with rapid clicks
       const timeout = setTimeout(() => {
         console.log('💾 Executing scheduled save');
         saveUserData(state);
-        setSaveTimeout(null);
+        saveTimeoutRef.current = null;
       }, 500); // Debounce saves by 500ms
 
-      setSaveTimeout(timeout);
+      saveTimeoutRef.current = timeout;
     } else if (!isOnline || syncStatus === 'error') {
       console.log('⏸️ Skipping scheduled save due to offline/quota error state');
     }
 
     return () => {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-        setSaveTimeout(null);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
       }
     };
-  }, [state, saveUserData, currentUser, isOnline, syncStatus, saveTimeout]);
+  }, [state, saveUserData, currentUser, isOnline, syncStatus]);
 
   // Use pattern hook after state is defined
   const { lastTen, futureTen } = useCratePattern(state?.allCrates || []);
