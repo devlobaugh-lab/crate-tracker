@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "crate-tracker-38b6e"
+    "default": "crate-tracker-38b6e",
+    "production": "crate-tracker-38b6e",
+    "staging": "crate-tracker-staging"
   }
 }

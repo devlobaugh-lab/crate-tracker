@@ -18,5 +18,51 @@
     "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "projects": {
+    "staging": {
+      "hosting": {
+        "public": "dist",
+        "ignore": [
+          "firebase.json",
+          "**/.*",
+          "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "**",
+            "destination": "/index.html"
+          }
+        ]
+      },
+      "firestore": {
+        "database": "(default)",
+        "location": "nam5",
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+      }
+    },
+    "production": {
+      "hosting": {
+        "public": "dist",
+        "ignore": [
+          "firebase.json",
+          "**/.*",
+          "**/node_modules/**"
+        ],
+        "rewrites": [
+          {
+            "source": "**",
+            "destination": "/index.html"
+          }
+        ]
+      },
+      "firestore": {
+        "database": "(default)",
+        "location": "nam5",
+        "rules": "firestore.rules",
+        "indexes": "firestore.indexes.json"
+      }
+    }
   }
 }
