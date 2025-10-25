@@ -126,8 +126,8 @@ function AppContent() {
   // Save to localStorage when state changes and we're offline
   useEffect(() => {
     if (state && currentUser && !isOnline && syncStatus === 'error') {
-      console.log('💾 Saving offline state to localStorage');
-      console.log('💾 State data:', state);
+      logger.log('💾 Saving offline state to localStorage');
+      logger.log('💾 State data:', state);
       saveOfflineData(state);
     }
   }, [state, currentUser, isOnline, syncStatus, saveOfflineData]);
@@ -135,7 +135,7 @@ function AppContent() {
   // Clear localStorage when successfully synced
   useEffect(() => {
     if (isOnline && syncStatus === 'synced' && currentUser) {
-      console.log('🗑️ Clearing localStorage after successful sync');
+      logger.log('🗑️ Clearing localStorage after successful sync');
       clearOfflineData();
     }
   }, [isOnline, syncStatus, currentUser, clearOfflineData]);
@@ -143,15 +143,15 @@ function AppContent() {
   // Load offline data on app startup if we're offline
   useEffect(() => {
     if (currentUser && !isOnline && syncStatus === 'error') {
-      console.log('🔄 App startup - attempting to load offline data');
+      logger.log('🔄 App startup - attempting to load offline data');
       // Small delay to ensure localStorage functions are available
       setTimeout(() => {
         const offlineData = loadOfflineData();
         if (offlineData) {
-          console.log('✅ Setting offline data to state');
+          logger.log('✅ Setting offline data to state');
           setState(offlineData);
         } else {
-          console.log('ℹ️ No offline data found');
+          logger.log('ℹ️ No offline data found');
         }
       }, 100);
     }
@@ -161,7 +161,7 @@ function AppContent() {
   useEffect(() => {
     // Don't save if we're offline due to quota errors
     if (state && currentUser && isOnline && syncStatus !== 'error') {
-      console.log('📤 State changed, scheduling save...');
+      logger.log('📤 State changed, scheduling save...');
 
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
@@ -170,14 +170,14 @@ function AppContent() {
 
       // Set new timeout - this ensures saves happen even with rapid clicks
       const timeout = setTimeout(() => {
-        console.log('💾 Executing scheduled save');
+        logger.log('💾 Executing scheduled save');
         saveUserData(state);
         saveTimeoutRef.current = null;
       }, 500); // Debounce saves by 500ms
 
       saveTimeoutRef.current = timeout;
     } else if (!isOnline || syncStatus === 'error') {
-      console.log('⏸️ Skipping scheduled save due to offline/quota error state');
+      logger.log('⏸️ Skipping scheduled save due to offline/quota error state');
     }
 
     return () => {
@@ -388,7 +388,7 @@ function App() {
     <ErrorBoundary
       showErrorDetails={process.env.NODE_ENV === 'development'}
       onError={(error, errorInfo) => {
-        console.error('App-level error:', error, errorInfo);
+        logger.error('App-level error:', error, errorInfo);
         // Could send to error reporting service
       }}
     >
