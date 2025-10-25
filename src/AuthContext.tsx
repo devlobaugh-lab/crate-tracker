@@ -286,16 +286,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Verify it was saved
           const saved = localStorage.getItem(`crate-tracker-offline-${currentUser.uid}`);
           if (saved === dataString) {
-            console.log('💾 Successfully saved offline data to localStorage');
-            console.log('💾 Data preview:', {
+            logger.log('💾 Successfully saved offline data to localStorage');
+            logger.log('💾 Data preview:', {
               wins: data.config.wins,
               crates: data.allCrates.length,
             });
           } else {
-            console.error('❌ Failed to save offline data to localStorage');
+            logger.error('❌ Failed to save offline data to localStorage');
           }
         } catch (error) {
-          console.error('❌ Error saving to localStorage:', error);
+          logger.error('❌ Error saving to localStorage:', error);
         }
       }
     },
@@ -305,32 +305,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadOfflineData = useCallback((): AppState | null => {
     if (currentUser) {
       const key = `crate-tracker-offline-${currentUser.uid}`;
-      console.log('🔍 Looking for localStorage key:', key);
+      logger.log('🔍 Looking for localStorage key:', key);
 
       const savedData = localStorage.getItem(key);
-      console.log('📦 Raw localStorage data:', savedData);
+      logger.log('📦 Raw localStorage data:', savedData);
 
       if (savedData) {
         try {
           const parsedData = JSON.parse(savedData);
           const { data, queuedActions, timestamp } = parsedData;
 
-          console.log('📤 Loaded offline data from localStorage:');
-          console.log('  - Timestamp:', timestamp);
-          console.log('  - Wins:', data.config.wins);
-          console.log('  - Crates:', data.allCrates.length);
-          console.log('  - Queued actions:', queuedActions.length);
+          logger.log('📤 Loaded offline data from localStorage:');
+          logger.log('  - Timestamp:', timestamp);
+          logger.log('  - Wins:', data.config.wins);
+          logger.log('  - Crates:', data.allCrates.length);
+          logger.log('  - Queued actions:', queuedActions.length);
 
           // Don't automatically set state - return the data for App.jsx to handle
-          console.log('✅ Retrieved offline data from localStorage');
+          logger.log('✅ Retrieved offline data from localStorage');
           return data;
         } catch (error) {
-          console.error('❌ Failed to parse localStorage data:', error);
-          console.error('❌ Raw data that failed to parse:', savedData);
+          logger.error('❌ Failed to parse localStorage data:', error);
+          logger.error('❌ Raw data that failed to parse:', savedData);
           return null;
         }
       } else {
-        console.log('ℹ️ No localStorage data found for key:', key);
+        logger.log('ℹ️ No localStorage data found for key:', key);
       }
     }
     return null;
@@ -339,7 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearOfflineData = useCallback((): void => {
     if (currentUser) {
       localStorage.removeItem(`crate-tracker-offline-${currentUser.uid}`);
-      console.log('🗑️ Cleared offline data from localStorage');
+      logger.log('🗑️ Cleared offline data from localStorage');
     }
   }, [currentUser]);
 
@@ -347,18 +347,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only process queue if we're online AND not in error state
     if (isOnline && actionQueue.length > 0 && syncStatus !== 'error') {
-      console.log('🔄 Processing action queue - back online');
+      logger.log('🔄 Processing action queue - back online');
       processActionQueue();
     } else if (syncStatus === 'error' && actionQueue.length > 0) {
-      console.log('⏸️ Skipping action queue processing due to error state');
+      logger.log('⏸️ Skipping action queue processing due to error state');
     }
   }, [isOnline, actionQueue.length, syncStatus, processActionQueue]);
 
   // Listen for global Firebase quota exceeded events
   useEffect(() => {
     const handleQuotaExceeded = (event: CustomEvent) => {
-      console.log('🚨 Received global quota exceeded event:', event.detail);
-      console.log(
+      logger.log('🚨 Received global quota exceeded event:', event.detail);
+      logger.log(
         '🚨 Current state before offline switch - isOnline:',
         isOnline,
         'syncStatus:',
@@ -374,12 +374,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forceOfflineMode();
       });
 
-      console.log('🚨 Successfully switched to offline mode due to quota exceeded');
+      logger.log('🚨 Successfully switched to offline mode due to quota exceeded');
     };
 
     const handleOperationBlocked = (event: CustomEvent) => {
-      console.log('🚨 Received blocked operation event:', event.detail);
-      console.log('🚨 Firebase operation blocked by client - switching to offline mode');
+      logger.log('🚨 Received blocked operation event:', event.detail);
+      logger.log('🚨 Firebase operation blocked by client - switching to offline mode');
 
       // Treat blocked operations as offline scenario
       setIsOnline(false);
@@ -390,15 +390,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forceOfflineMode();
       });
 
-      console.log('🚨 Successfully switched to offline mode due to blocked operations');
+      logger.log('🚨 Successfully switched to offline mode due to blocked operations');
     };
 
-    console.log('🔧 Setting up global Firebase event listeners');
+    logger.log('🔧 Setting up global Firebase event listeners');
     window.addEventListener('firebase-quota-exceeded', handleQuotaExceeded as EventListener);
     window.addEventListener('firebase-operation-blocked', handleOperationBlocked as EventListener);
 
     return () => {
-      console.log('🔧 Removing global Firebase event listeners');
+      logger.log('🔧 Removing global Firebase event listeners');
       window.removeEventListener('firebase-quota-exceeded', handleQuotaExceeded as EventListener);
       window.removeEventListener(
         'firebase-operation-blocked',
@@ -410,11 +410,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      console.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
+      logger.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
 
       if (user) {
         // User is signed in - reset connection state and load their data
-        console.log('🔐 User signed in, resetting connection state');
+        logger.log('🔐 User signed in, resetting connection state');
         setIsOnline(true);
         setSyncStatus('synced');
         setCurrentUser({
@@ -428,14 +428,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const data = await loadUserData(user.uid);
           setUserData(data);
-          console.log('✅ User data loaded successfully after sign in');
+          logger.log('✅ User data loaded successfully after sign in');
         } catch (error) {
-          console.error('❌ Failed to load user data after sign in:', error);
+          logger.error('❌ Failed to load user data after sign in:', error);
           setUserData({ allCrates: [], config: { wins: 0, gpWins: 0 } });
         }
       } else {
         // User is signed out, clear data
-        console.log('🔐 User signed out, clearing data');
+        logger.log('🔐 User signed out, clearing data');
         setCurrentUser(null);
         setUserData(null);
         setIsOnline(true); // Reset to online state for next sign in
@@ -451,12 +451,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Set up real-time listener for user data changes
   useEffect(() => {
     if (!currentUser) {
-      console.log('⏸️ No current user - skipping real-time listener setup');
+      logger.log('⏸️ No current user - skipping real-time listener setup');
       return;
     }
 
     // Always try to set up the listener when we have a current user
-    console.log(
+    logger.log(
       '🔄 Setting up real-time listener for user:',
       currentUser.uid.substring(0, 8) + '...'
     );
@@ -466,14 +466,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userDocRef,
       doc => {
         if (doc.exists() && !ignoreRemoteChanges) {
-          console.log('📡 Real-time data update received from Firebase');
+          logger.log('📡 Real-time data update received from Firebase');
           setUserData(doc.data() as AppState);
         }
       },
       error => {
-        console.error('❌ Real-time listener error:', error);
-        console.error('❌ Listener error code:', (error as FirestoreError).code);
-        console.error('❌ Listener error message:', (error as FirestoreError).message);
+        logger.error('❌ Real-time listener error:', error);
+        logger.error('❌ Listener error code:', (error as FirestoreError).code);
+        logger.error('❌ Listener error message:', (error as FirestoreError).message);
 
         // Only treat specific errors as offline-worthy
         const errorCode = (error as any)?.code;
@@ -489,7 +489,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // For most listener errors, just log them but don't go offline
         // Only go offline for clear network/quota issues
         if (isNetworkError || isQuotaError) {
-          console.log('🚫 Listener network/quota error - staying online but logging');
+          logger.log('🚫 Listener network/quota error - staying online but logging');
           // Don't automatically go offline for listener errors
           // The app can still function and retry operations
         }
@@ -497,7 +497,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
-      console.log('🛑 Cleaning up real-time listener');
+      logger.log('🛑 Cleaning up real-time listener');
       unsubscribe();
     };
   }, [currentUser, ignoreRemoteChanges]);
@@ -507,7 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkConnection = async () => {
       // Don't check connection if we're in quota error state
       if (syncStatus === 'error' && !isOnline) {
-        console.log('⏸️ Skipping connection check due to quota error state');
+        logger.log('⏸️ Skipping connection check due to quota error state');
         return;
       }
 
@@ -537,7 +537,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only run quota reset checks when in offline quota error state
     if (syncStatus === 'error' && !isOnline) {
-      console.log('⏰ Setting up smart quota reset detection (hourly at :02)');
+      logger.log('⏰ Setting up smart quota reset detection (hourly at :02)');
 
       const scheduleNextQuotaCheck = (): NodeJS.Timeout => {
         const now = new Date();
@@ -551,7 +551,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         const millisecondsUntilNextCheck = nextHour.getTime() - now.getTime();
 
-        console.log(
+        logger.log(
           `⏰ Next quota check scheduled for: ${nextHour.toLocaleTimeString()} (${Math.round(millisecondsUntilNextCheck / 60000)} minutes)`
         );
 
@@ -561,14 +561,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       const performQuotaCheck = async (): Promise<void> => {
-        console.log('🔄 Checking if Firebase quota has been restored...');
+        logger.log('🔄 Checking if Firebase quota has been restored...');
 
         try {
           // Try a minimal Firebase operation to test quota
           const networkAvailable = await checkNetworkStatus();
 
           if (networkAvailable) {
-            console.log('✅ Firebase quota appears to be restored!');
+            logger.log('✅ Firebase quota appears to be restored!');
             setIsOnline(true);
             setSyncStatus('syncing');
 
@@ -577,11 +577,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Process any queued actions
             setTimeout(() => {
-              console.log('🔄 Processing queued actions after quota restoration');
+              logger.log('🔄 Processing queued actions after quota restoration');
               processActionQueue();
             }, 2000);
           } else {
-            console.log('⏸️ Firebase quota still exceeded - scheduling next check');
+            logger.log('⏸️ Firebase quota still exceeded - scheduling next check');
             // Schedule next check (will be at next hour :02)
             scheduleNextQuotaCheck();
           }
@@ -593,10 +593,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             (error as Error).message?.includes('Quota exceeded');
 
           if (isStillQuotaError) {
-            console.log('⏸️ Quota still exceeded - scheduling next check');
+            logger.log('⏸️ Quota still exceeded - scheduling next check');
             scheduleNextQuotaCheck();
           } else {
-            console.log('⚠️ Different error detected:', (error as Error).message);
+            logger.log('⚠️ Different error detected:', (error as Error).message);
             // Could be network issues, schedule next check anyway
             scheduleNextQuotaCheck();
           }
@@ -607,7 +607,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firstCheckTimeout = scheduleNextQuotaCheck();
 
       return () => {
-        console.log('🛑 Clearing quota reset detection timeout');
+        logger.log('🛑 Clearing quota reset detection timeout');
         clearTimeout(firstCheckTimeout);
       };
     }
