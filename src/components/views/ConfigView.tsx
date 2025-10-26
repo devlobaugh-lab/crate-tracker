@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../AuthContext.tsx';
+import logger from '../../utils/logger';
 
 /**
  * ConfigView component for application settings and data management
@@ -41,30 +42,30 @@ function ConfigView({
   }
 
   function reset(): void {
-    console.log('🔄 Reset button clicked');
+    logger.log('🔄 Reset button clicked');
 
     // Temporarily ignore remote changes to prevent sync loop
     setIgnoreRemoteChanges(true);
 
     // Update state immediately - this should always work
-    console.log('🔄 Resetting state to zero');
+    logger.log('🔄 Resetting state to zero');
     onChange({ wins: 0, gpWins: 0 }, true, false);
 
     // Save to Firestore (will fail if offline, but that's okay)
     if (currentUser) {
       const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
       saveUserData(resetData).catch((error: Error) => {
-        console.log('ℹ️ Firestore save failed (expected if offline):', error.message);
+        logger.log('ℹ️ Firestore save failed (expected if offline):', error.message);
       });
     }
 
-    console.log('✅ State reset completed');
+    logger.log('✅ State reset completed');
     setImportStatus('All Data reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
 
     // Re-enable remote changes after a shorter delay
     setTimeout(() => {
-      console.log('Re-enabling remote changes');
+      logger.log('Re-enabling remote changes');
       setIgnoreRemoteChanges(false);
     }, 200);
   }
