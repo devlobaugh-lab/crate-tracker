@@ -51,13 +51,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [actionQueue, setActionQueue] = useState<QueuedAction[]>([]);
 
   // Google sign in
-  async function signInWithGoogle(): Promise<FirebaseUser> {
+  async function signInWithGoogle(): Promise<void> {
     setAuthLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
-    } catch (error) {
+      logger.log('✅ Google sign in successful:', result.user.email);
+      // The authentication state change will be handled by onAuthStateChanged
+    } catch (error: any) {
       logger.error('Error signing in with Google:', error);
+
+      // Check if this is a Cross-Origin-Opener-Policy related error
+      if (error?.message?.includes('Cross-Origin-Opener-Policy') ||
+          error?.message?.includes('window.closed') ||
+          error?.message?.includes('opener')) {
+        logger.log('🔄 COOP policy detected, user may need to refresh or use different browser settings');
+
+        // Show a user-friendly error message for COOP issues
+        const coopError = new Error(
+          'Authentication popup was blocked due to browser security settings. ' +
+          'Please try disabling browser extensions that may add security headers, ' +
+          'or use an incognito/private window.'
+        );
+        coopError.name = 'COOPPolicyError';
+        setAuthLoading(false);
+        throw coopError;
+      }
+
+      setAuthLoading(false);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -447,6 +467,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return unsubscribe;
   }, []);
+
+
 
   // Set up real-time listener for user data changes
   useEffect(() => {
