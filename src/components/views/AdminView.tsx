@@ -119,13 +119,6 @@ function AdminView({ onBack }: AdminViewProps) {
     }
   };
 
-  const formatTimestamp = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
-    // Handle Firestore timestamp objects
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
   return (
     <div className='bg-gray-700 px-4 py-4 rounded-2xl shadow-lg lg:max-w-6xl lg:mx-auto'>
       <div className='flex items-center justify-between mb-6'>
@@ -204,12 +197,12 @@ function AdminView({ onBack }: AdminViewProps) {
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Email</th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Role</th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Status</th>
-                    <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
+                    {/* <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Invited By
                     </th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Created
-                    </th>
+                    </th> */}
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Actions
                     </th>
@@ -219,7 +212,7 @@ function AdminView({ onBack }: AdminViewProps) {
                   {users.map(user => (
                     <tr key={user.id} className='border-b border-gray-600 hover:bg-gray-650'>
                       <td className='px-4 py-3 text-gray-300 text-xs'>{user.email}</td>
-                      <td className='px-4 py-3 text-gray-300'>
+                      <td className='px-4 py-3 text-gray-300 min-w-32'>
                         <select
                           value={user.role}
                           onChange={e =>
@@ -242,10 +235,10 @@ function AdminView({ onBack }: AdminViewProps) {
                           {user.status}
                         </span>
                       </td>
-                      <td className='px-4 py-3 text-gray-300 text-xs'>{user.invitedBy}</td>
+                      {/* <td className='px-4 py-3 text-gray-300 text-xs'>{user.invitedBy}</td>
                       <td className='px-4 py-3 text-gray-300 text-xs'>
                         {formatTimestamp(user.createdAt)}
-                      </td>
+                      </td> */}
                       <td className='px-4 py-3'>
                         <div className='flex gap-2'>
                           <button
@@ -319,7 +312,7 @@ function AdminView({ onBack }: AdminViewProps) {
                     </div>
 
                     {/* Invited By and Created */}
-                    <div className='grid grid-cols-2 gap-4'>
+                    {/* <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <div className='text-xs text-gray-400 uppercase font-semibold mb-1'>
                           Invited By
@@ -334,7 +327,7 @@ function AdminView({ onBack }: AdminViewProps) {
                           {formatTimestamp(user.createdAt)}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Actions */}
                     <div>
