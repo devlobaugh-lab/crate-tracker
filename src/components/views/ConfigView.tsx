@@ -13,6 +13,7 @@ interface ConfigViewProps {
   allCrates: string[];
   onChange: (config: any, resetAllCrates?: boolean, importData?: any) => void;
   onBack: () => void;
+  onAdmin: () => void;
   setIgnoreRemoteChanges: (ignore: boolean) => void;
 }
 
@@ -26,6 +27,7 @@ function ConfigView({
   allCrates: _allCrates,
   onChange,
   onBack,
+  onAdmin,
   setIgnoreRemoteChanges,
 }: ConfigViewProps) {
   const { currentUser, saveUserData, exportUserData, importUserData } = useAuth();
@@ -195,6 +197,17 @@ function ConfigView({
           </div>
         )}
       </div>
+
+      {currentUser?.role === 'admin' && (
+        <div className='mt-6 pt-4 border-t border-gray-600'>
+          <button
+            onClick={onAdmin}
+            className='w-full py-2 px-4 rounded-lg bg-yellow-700 text-white font-semibold text-sm shadow hover:bg-yellow-900 transition-colors duration-200'
+          >
+            User Administration
+          </button>
+        </div>
+      )}
     </div>
   );
 }

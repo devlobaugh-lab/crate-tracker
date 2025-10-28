@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
+import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
 import UserProfile from './UserProfile.tsx';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import {
@@ -14,6 +15,7 @@ import logger from './utils/logger';
 import SmallRow from './components/common/SmallRow.tsx';
 import ConnectionStatus from './components/common/ConnectionStatus.tsx';
 import ConfigView from './components/views/ConfigView.tsx';
+import AdminView from './components/views/AdminView.tsx';
 import IntroView from './components/views/IntroView.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
@@ -42,7 +44,8 @@ function AppContent() {
     saveOfflineData,
     clearOfflineData,
     loadOfflineData,
-  } = useAuth();
+    authorizationStatus,
+  } = useAuth() as any;
 
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
@@ -222,9 +225,14 @@ function AppContent() {
     // Let Firebase's natural debouncing and sync handle it
   }
 
-  const [view, setView] = useState<'intro' | 'main' | 'config'>(
+  const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
     (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
   );
+
+  // Handle different authorization states
+  if (authorizationStatus === 'unauthorized') {
+    return <UnauthorizedAccess />;
+  }
 
   if (!currentUser) {
     return <Login />;
@@ -331,6 +339,7 @@ function AppContent() {
                 setIgnoreWithTimeout(5000);
               }}
               onBack={() => setView('main')}
+              onAdmin={() => setView('admin')}
               setIgnoreRemoteChanges={setIgnoreRemoteChanges}
             />
           </ErrorBoundary>
@@ -347,6 +356,20 @@ function AppContent() {
             }
           >
             <IntroView onBack={() => setView('main')} />
+          </ErrorBoundary>
+        )}
+
+        {view === 'admin' && (
+          <ErrorBoundary
+            fallback={
+              <div className='p-4 bg-red-900/20 border border-red-500 rounded-lg'>
+                <p className='text-red-400 text-sm'>
+                  Error loading admin view. Please refresh the page.
+                </p>
+              </div>
+            }
+          >
+            <AdminView onBack={() => setView('config')} />
           </ErrorBoundary>
         )}
       </ErrorBoundary>
