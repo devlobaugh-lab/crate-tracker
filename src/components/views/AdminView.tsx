@@ -204,12 +204,12 @@ function AdminView({ onBack }: AdminViewProps) {
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Email</th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Role</th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>Status</th>
-                    <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
+                    {/* <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Invited By
                     </th>
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Created
-                    </th>
+                    </th> */}
                     <th className='px-4 py-3 text-left text-white font-semibold text-sm'>
                       Actions
                     </th>
@@ -242,10 +242,10 @@ function AdminView({ onBack }: AdminViewProps) {
                           {user.status}
                         </span>
                       </td>
-                      <td className='px-4 py-3 text-gray-300 text-xs'>{user.invitedBy}</td>
+                      {/* <td className='px-4 py-3 text-gray-300 text-xs'>{user.invitedBy}</td>
                       <td className='px-4 py-3 text-gray-300 text-xs'>
                         {formatTimestamp(user.createdAt)}
-                      </td>
+                      </td> */}
                       <td className='px-4 py-3'>
                         <div className='flex gap-2'>
                           <button
@@ -319,7 +319,7 @@ function AdminView({ onBack }: AdminViewProps) {
                     </div>
 
                     {/* Invited By and Created */}
-                    <div className='grid grid-cols-2 gap-4'>
+                    {/* <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <div className='text-xs text-gray-400 uppercase font-semibold mb-1'>
                           Invited By
@@ -334,7 +334,7 @@ function AdminView({ onBack }: AdminViewProps) {
                           {formatTimestamp(user.createdAt)}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Actions */}
                     <div>

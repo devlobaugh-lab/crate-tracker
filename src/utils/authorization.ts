@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.ts';
 import { AuthorizedUser, UserInvitation } from '../types';
 import logger from './logger';
@@ -50,6 +50,20 @@ export class AuthorizationService {
       logger.error(`❌ Error checking authorization for ${userEmail}:`, error);
       logger.error(`❌ Error details:`, (error as Error).message);
       return { authorized: false };
+    }
+  }
+
+  /**
+   * Check if a user exists in the system (admin helper - doesn't check status)
+   */
+  static async checkUserExists(userEmail: string): Promise<boolean> {
+    try {
+      const docRef = doc(db, 'authorizedUsers', userEmail.toLowerCase());
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists();
+    } catch (error) {
+      logger.error(`❌ Error checking if user exists: ${userEmail}:`, error);
+      return false;
     }
   }
 
@@ -205,8 +219,8 @@ Sign in with: ${invitation.email}`;
       }
 
       // Check if target user exists
-      const userCheck = await this.checkUserAuthorization(targetEmail);
-      if (!userCheck.authorized) {
+      const userExists = await this.checkUserExists(targetEmail);
+      if (!userExists) {
         return { success: false, message: 'Target user not found.' };
       }
 
@@ -249,8 +263,8 @@ Sign in with: ${invitation.email}`;
       }
 
       // Check if target user exists
-      const userCheck = await this.checkUserAuthorization(targetEmail);
-      if (!userCheck.authorized) {
+      const userExists = await this.checkUserExists(targetEmail);
+      if (!userExists) {
         return { success: false, message: 'Target user not found.' };
       }
 
@@ -288,14 +302,14 @@ Sign in with: ${invitation.email}`;
       }
 
       // Check if target user exists
-      const userCheck = await this.checkUserAuthorization(targetEmail);
-      if (!userCheck.authorized) {
+      const userExists = await this.checkUserExists(targetEmail);
+      if (!userExists) {
         return { success: false, message: 'Target user not found.' };
       }
 
       // Delete the user document
       const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
-      await setDoc(docRef, null); // Creates a tombstone record instead of actual deletion
+      await deleteDoc(docRef);
 
       logger.log(`✅ User deleted: ${targetEmail}`);
       return {
