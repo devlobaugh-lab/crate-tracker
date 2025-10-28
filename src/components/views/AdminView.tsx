@@ -119,13 +119,6 @@ function AdminView({ onBack }: AdminViewProps) {
     }
   };
 
-  const formatTimestamp = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
-    // Handle Firestore timestamp objects
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
   return (
     <div className='bg-gray-700 px-4 py-4 rounded-2xl shadow-lg lg:max-w-6xl lg:mx-auto'>
       <div className='flex items-center justify-between mb-6'>
