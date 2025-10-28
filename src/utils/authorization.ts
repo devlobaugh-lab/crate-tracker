@@ -185,6 +185,141 @@ Sign in with: ${invitation.email}`;
   }
 
   /**
+   * Update user role (admin only)
+   */
+  static async updateUserRole(
+    targetEmail: string,
+    newRole: 'admin' | 'normal',
+    adminEmail: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Check if admin
+      const adminCheck = await this.checkUserAuthorization(adminEmail);
+      if (!adminCheck.authorized || adminCheck.role !== 'admin') {
+        return { success: false, message: 'Only administrators can update user roles.' };
+      }
+
+      // Validate role
+      if (!['admin', 'normal'].includes(newRole)) {
+        return { success: false, message: 'Invalid role specified.' };
+      }
+
+      // Check if target user exists
+      const userCheck = await this.checkUserAuthorization(targetEmail);
+      if (!userCheck.authorized) {
+        return { success: false, message: 'Target user not found.' };
+      }
+
+      // Update the user role
+      const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
+      await setDoc(
+        docRef,
+        { role: newRole, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+
+      logger.log(`✅ User role updated: ${targetEmail} → ${newRole}`);
+      return {
+        success: true,
+        message: `User role updated to ${newRole}.`,
+      };
+    } catch (error) {
+      logger.error('Error updating user role:', error);
+      return {
+        success: false,
+        message: 'Failed to update user role. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Deactivate or activate user (admin only)
+   */
+  static async toggleUserStatus(
+    targetEmail: string,
+    newStatus: 'active' | 'inactive',
+    adminEmail: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Validate status
+      if (!['active', 'inactive'].includes(newStatus)) {
+        return { success: false, message: 'Invalid status specified.' };
+      }
+
+      // Check if admin
+      const adminCheck = await this.checkUserAuthorization(adminEmail);
+      if (!adminCheck.authorized || adminCheck.role !== 'admin') {
+        return { success: false, message: 'Only administrators can change user status.' };
+      }
+
+      // Check if target user exists
+      const userCheck = await this.checkUserAuthorization(targetEmail);
+      if (!userCheck.authorized) {
+        return { success: false, message: 'Target user not found.' };
+      }
+
+      // Update the user status
+      const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
+      await setDoc(
+        docRef,
+        { status: newStatus, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+
+      const action = newStatus === 'active' ? 'activated' : 'deactivated';
+      logger.log(`✅ User ${action}: ${targetEmail}`);
+      return {
+        success: true,
+        message: `User has been ${action}.`,
+      };
+    } catch (error) {
+      logger.error('Error changing user status:', error);
+      return {
+        success: false,
+        message: 'Failed to change user status. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Delete user (admin only - hard delete)
+   */
+  static async deleteUser(
+    targetEmail: string,
+    adminEmail: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Check if admin
+      const adminCheck = await this.checkUserAuthorization(adminEmail);
+      if (!adminCheck.authorized || adminCheck.role !== 'admin') {
+        return { success: false, message: 'Only administrators can delete users.' };
+      }
+
+      // Check if target user exists
+      const userCheck = await this.checkUserAuthorization(targetEmail);
+      if (!userCheck.authorized) {
+        return { success: false, message: 'Target user not found.' };
+      }
+
+      // Delete the user document
+      const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
+      await setDoc(docRef, null); // Creates a tombstone record instead of actual deletion
+
+      logger.log(`✅ User deleted: ${targetEmail}`);
+      return {
+        success: true,
+        message: 'User has been removed from the system.',
+      };
+    } catch (error) {
+      logger.error('Error deleting user:', error);
+      return {
+        success: false,
+        message: 'Failed to delete user. Please try again.',
+      };
+    }
+  }
+
+  /**
    * Normalize email to lowercase
    */
   static normalizeEmail(email: string): string {
