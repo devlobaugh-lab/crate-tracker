@@ -4,6 +4,29 @@ export interface User {
   email: string;
   displayName?: string;
   photoURL?: string;
+  role?: 'admin' | 'normal';
+  authorized?: boolean;
+}
+
+// Import Firebase types
+import { Timestamp, FieldValue } from 'firebase/firestore';
+
+// User authorization and management types
+export interface AuthorizedUser {
+  id?: string; // Document ID
+  email: string; // lowercased Gmail address
+  role: 'admin' | 'normal';
+  status: 'active' | 'inactive';
+  invitedBy?: string; // Gmail of inviting admin
+  invitedAt?: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+}
+
+export interface UserInvitation {
+  email: string;
+  role: 'admin' | 'normal';
+  invitedBy: string; // Admin Gmail address
 }
 
 export interface Crate {
