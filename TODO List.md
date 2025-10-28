@@ -1,15 +1,9 @@
-# TODO List - Code Quality Improvements
-## Features
+# TODO List - 
+# Features
 ## 1: Add invite system to unlock the app for people
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
-### Prerequisites & Decisions
-- Email Service: Firebase Functions with SendGrid integration
-- Initial Admin: Manual Firestore document creation
-- User Base: Restricted to Gmail addresses only
-- Seeding: Create script later for automated admin setup
-
-### Database Schema
+### New Database Schema
 **New Collection: `/authorizedUsers/{gmailAddress}`**
 - email: string (lowercased Gmail address)
 - role: 'admin' | 'normal'
@@ -39,31 +33,27 @@
 
 ## Phase 3: Admin Interface Components
 - [x] Create `src/components/views/AdminView.tsx`
-- [ ] Build user management table (list/add/edit/deactivate users)
-- [ ] Add role toggle functionality (normal ↔ admin)
-- [ ] Implement Gmail address validation and normalization
+- [x] Build user management table (list/add/edit/deactivate users)
+- [x] Add role toggle functionality (normal ↔ admin)
+- [x] Implement Gmail address validation and normalization
 - [x] Add admin panel access button to ConfigView (role-based visibility)
 
 ## Phase 4: Email Invitation System
-- [ ] Set up Firebase Functions with SendGrid integration
-- [ ] Create `sendInvite` Cloud Function with email template
+- [ ] Set up email sending through Google SMTP
+- [ ] Create `sendInvite` function with email template
 - [ ] Add invite sending functionality to AdminView
 - [ ] Implement invitation status tracking
 - [ ] Add invite email UI with admin email preview
 
-## Phase 5: UI Integration & UX
-- [ ] Update Login component for invite-only messaging
-- [ ] Add "Request Access" flow for unauthorized Gmail users
-- [ ] Handle role-based feature access throughout app
-- [ ] Add loading states and error handling for authorization checks
-
-## Phase 6: Testing & Production Readiness
+## Phase 5: Testing & Production Readiness
 - [ ] Create admin user management tests
 - [ ] Test invite email workflow end-to-end
 - [ ] Validate Gmail-only restriction
 - [ ] Security audit: prevent admin privilege escalation
 - [ ] Deploy Firebase Functions and update client configuration
 
+
+# Code Quality Improvements
 ## Code Improvements
 Key issues to make in readability, security, and stability.
 
