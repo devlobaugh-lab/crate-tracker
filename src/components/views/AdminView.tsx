@@ -219,7 +219,7 @@ function AdminView({ onBack }: AdminViewProps) {
                   {users.map(user => (
                     <tr key={user.id} className='border-b border-gray-600 hover:bg-gray-650'>
                       <td className='px-4 py-3 text-gray-300 text-xs'>{user.email}</td>
-                      <td className='px-4 py-3 text-gray-300'>
+                      <td className='px-4 py-3 text-gray-300 min-w-32'>
                         <select
                           value={user.role}
                           onChange={e =>
