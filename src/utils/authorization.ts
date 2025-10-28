@@ -212,11 +212,7 @@ Sign in with: ${invitation.email}`;
 
       // Update the user role
       const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
-      await setDoc(
-        docRef,
-        { role: newRole, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await setDoc(docRef, { role: newRole, updatedAt: serverTimestamp() }, { merge: true });
 
       logger.log(`✅ User role updated: ${targetEmail} → ${newRole}`);
       return {
@@ -260,11 +256,7 @@ Sign in with: ${invitation.email}`;
 
       // Update the user status
       const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
-      await setDoc(
-        docRef,
-        { status: newStatus, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await setDoc(docRef, { status: newStatus, updatedAt: serverTimestamp() }, { merge: true });
 
       const action = newStatus === 'active' ? 'activated' : 'deactivated';
       logger.log(`✅ User ${action}: ${targetEmail}`);
