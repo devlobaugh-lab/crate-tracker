@@ -15,14 +15,14 @@ service cloud.firestore {
     // Helper function to check if user is an admin
     function isAdmin() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email)) &&
-             get(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email)).data.role == 'admin';
+             exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email.lower())) &&
+             get(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email.lower())).data.role == 'admin';
     }
 
     // Helper function to check if user is authorized (exists in authorizedUsers)
     function isAuthorized() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email));
+             exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email.lower()));
     }
 
     // Helper function to validate Gmail address format
@@ -33,7 +33,8 @@ service cloud.firestore {
     // Enhanced authorized users collection - for user checking and admin management
     match /authorizedUsers/{gmailAddress} {
       // Any authenticated user can check if they exist (for authorization logic)
-      allow read: if isAuthenticated() && request.auth.token.email == gmailAddress;
+      // Admins can read any user document for management purposes
+      allow read: if isAuthenticated() && (request.auth.token.email.lower() == gmailAddress || isAdmin());
       // Only admins can read all users (for admin panel listing)
       allow list: if isAdmin();
       // Only admins can create/modify/delete other users
