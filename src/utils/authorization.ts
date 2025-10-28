@@ -1,4 +1,12 @@
-import { doc, getDoc, setDoc, deleteDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  collection,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '../firebase.ts';
 import { AuthorizedUser, UserInvitation } from '../types';
 import logger from './logger';
