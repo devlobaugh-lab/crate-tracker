@@ -33,7 +33,7 @@ GBBBBPBBGBBBBGBBGBBBGBBBBGBGBBBBGBBBBGBBGBBBBGBBGBBBBPBBGBBBGBBBBGBGBBBBGBBBBGBB
 
 // Storage and app configuration
 export const STORAGE_KEY: string = 'crate-tracker:v1';
-export const APP_VERSION: string = '1.3.2';
+export const APP_VERSION: string = '1.3.3';
 
 // Valid characters for pattern matching
 export const VALID_CRATE_CHARS: string[] = ['B', 'G', 'P', 'L'];
