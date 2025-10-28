@@ -1,0 +1,195 @@
+import { doc, getDoc, setDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase.ts';
+import { AuthorizedUser, UserInvitation } from '../types';
+import logger from './logger';
+
+/**
+ * Authorization utility functions
+ * All operations performed client-side for free tier compatibility
+ */
+
+export class AuthorizationService {
+  /**
+   * Check if the current user is authorized to access the app
+   */
+  static async checkUserAuthorization(
+    userEmail: string
+  ): Promise<{ authorized: boolean; role?: 'admin' | 'normal' }> {
+    logger.log(`🔍 Checking authorization for: ${userEmail}`);
+    logger.log(`🔍 Normalized email: ${userEmail.toLowerCase()}`);
+
+    try {
+      const docRef = doc(db, 'authorizedUsers', userEmail.toLowerCase());
+      logger.log(`🔍 Looking for document: authorizedUsers/${userEmail.toLowerCase()}`);
+
+      const docSnap = await getDoc(docRef);
+
+      logger.log(`🔍 Document exists: ${docSnap.exists()}`);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as AuthorizedUser;
+        logger.log(`🔍 Document data:`, data);
+        logger.log(`🔍 Status check: ${data.status} === 'active'? ${data.status === 'active'}`);
+
+        if (data.status === 'active') {
+          logger.log(`✅ User ${userEmail} is authorized as ${data.role}`);
+          return { authorized: true, role: data.role };
+        } else {
+          logger.log(`⚠️ User ${userEmail} found but status is '${data.status}', not 'active'`);
+          return { authorized: false };
+        }
+      } else {
+        logger.log(`❌ User ${userEmail} document not found in authorizedUsers collection`);
+        logger.log(`💡 Make sure the email is lowercase in Firestore: ${userEmail.toLowerCase()}`);
+        return { authorized: false };
+      }
+
+      logger.log(`❌ Unexpected authorization failure for ${userEmail}`);
+      return { authorized: false };
+    } catch (error) {
+      logger.error(`❌ Error checking authorization for ${userEmail}:`, error);
+      logger.error(`❌ Error details:`, (error as Error).message);
+      return { authorized: false };
+    }
+  }
+
+  /**
+   * Authorize a new Gmail user (admin only)
+   */
+  static async authorizeUser(
+    invitation: UserInvitation,
+    adminEmail: string
+  ): Promise<{ success: boolean; message: string; user?: AuthorizedUser; emailContent?: any }> {
+    try {
+      // Validate Gmail format
+      if (!invitation.email.toLowerCase().endsWith('@gmail.com')) {
+        return { success: false, message: 'Only Gmail addresses are allowed.' };
+      }
+
+      // Check if admin
+      const adminCheck = await this.checkUserAuthorization(adminEmail);
+      if (!adminCheck.authorized || adminCheck.role !== 'admin') {
+        return { success: false, message: 'Only administrators can authorize new users.' };
+      }
+
+      // Check if user already exists
+      const existingCheck = await this.checkUserAuthorization(invitation.email.toLowerCase());
+      if (existingCheck.authorized) {
+        return { success: false, message: 'This email address is already authorized.' };
+      }
+
+      // Create authorized user record
+      const newUser: AuthorizedUser = {
+        id: invitation.email.toLowerCase(), // Will be set by Firestore
+        email: invitation.email.toLowerCase(),
+        role: invitation.role,
+        status: 'active',
+        invitedBy: adminEmail.toLowerCase(),
+        invitedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      const docRef = doc(db, 'authorizedUsers', invitation.email.toLowerCase());
+      await setDoc(docRef, newUser);
+
+      // Generate email content for manual sending
+      const emailSubject = `You're invited to join Crate Tracker!`;
+      const emailHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2>Welcome to Crate Tracker!</h2>
+  <p>You've been invited to join Crate Tracker.</p>
+  <p>Crate Tracker is a tool for tracking your game progress and patterns.</p>
+  <p><strong>Your role:</strong> ${invitation.role === 'admin' ? 'Administrator' : 'Regular User'}</p>
+  <p>To get started:</p>
+  <ol>
+    <li>Visit <a href="https://crate-tracker.web.app">crate-tracker.web.app</a></li>
+    <li>Sign in with your Gmail account (${invitation.email})</li>
+    <li>Start tracking your crates!</li>
+  </ol>
+  <p>This invitation gives you full access to the app.</p>
+  <hr>
+  <p style="font-size: 12px; color: #666;">
+    This invitation was processed automatically. Please do not reply to this message.
+  </p>
+</div>`;
+
+      const emailText = `Welcome to Crate Tracker!
+
+You've been invited to join Crate Tracker.
+
+Your role: ${invitation.role === 'admin' ? 'Administrator' : 'Regular User'}
+
+Visit: https://crate-tracker.web.app
+Sign in with: ${invitation.email}`;
+
+      logger.log(`✅ User authorized successfully: ${invitation.email}`);
+      return {
+        success: true,
+        message: 'User authorized successfully. Copy the email content below to send manually.',
+        user: newUser,
+        emailContent: {
+          to: invitation.email,
+          subject: emailSubject,
+          html: emailHtml,
+          text: emailText,
+        },
+      };
+    } catch (error) {
+      logger.error('Error authorizing user:', error);
+      return {
+        success: false,
+        message: 'Failed to authorize user. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * List all authorized users (admin only)
+   */
+  static async listAuthorizedUsers(
+    adminEmail: string
+  ): Promise<{ success: boolean; users?: AuthorizedUser[]; message?: string }> {
+    try {
+      // Check if admin
+      const adminCheck = await this.checkUserAuthorization(adminEmail);
+      if (!adminCheck.authorized || adminCheck.role !== 'admin') {
+        return { success: false, message: 'Only administrators can list users.' };
+      }
+
+      // Get all authorized users
+      const querySnapshot = await getDocs(collection(db, 'authorizedUsers'));
+      const users: AuthorizedUser[] = [];
+
+      querySnapshot.forEach(doc => {
+        users.push({ id: doc.id, ...doc.data() } as AuthorizedUser);
+      });
+
+      logger.log(`📋 Listed ${users.length} authorized users`);
+      return { success: true, users };
+    } catch (error) {
+      logger.error('Error listing users:', error);
+      return {
+        success: false,
+        message: 'Failed to list users. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Validate Gmail address format
+   */
+  static isValidGmailAddress(email: string): boolean {
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    return gmailRegex.test(email);
+  }
+
+  /**
+   * Normalize email to lowercase
+   */
+  static normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
+  }
+}
+
+export default AuthorizationService;

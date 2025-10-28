@@ -10,6 +10,7 @@ import { doc, getDoc, setDoc, onSnapshot, FirestoreError } from 'firebase/firest
 import { auth, db, googleProvider, checkNetworkStatus } from './firebase.ts';
 import { User, AuthContextType } from './types';
 import logger from './utils/logger';
+import AuthorizationService from './utils/authorization';
 
 // Define the state interface
 interface AppState {
@@ -49,15 +50,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     'synced'
   );
   const [actionQueue, setActionQueue] = useState<QueuedAction[]>([]);
+  const [authorizationStatus, setAuthorizationStatus] = useState<
+    'checking' | 'authorized' | 'unauthorized'
+  >('checking');
 
   // Google sign in
-  async function signInWithGoogle(): Promise<FirebaseUser> {
+  async function signInWithGoogle(): Promise<void> {
     setAuthLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
-    } catch (error) {
+      logger.log('✅ Google sign in successful:', result.user.email);
+      // The authentication state change will be handled by onAuthStateChanged
+    } catch (error: any) {
       logger.error('Error signing in with Google:', error);
+
+      // Check if this is a Cross-Origin-Opener-Policy related error
+      if (
+        error?.message?.includes('Cross-Origin-Opener-Policy') ||
+        error?.message?.includes('window.closed') ||
+        error?.message?.includes('opener')
+      ) {
+        logger.log(
+          '🔄 COOP policy detected, user may need to refresh or use different browser settings'
+        );
+
+        // Show a user-friendly error message for COOP issues
+        const coopError = new Error(
+          'Authentication popup was blocked due to browser security settings. ' +
+            'Please try disabling browser extensions that may add security headers, ' +
+            'or use an incognito/private window.'
+        );
+        coopError.name = 'COOPPolicyError';
+        setAuthLoading(false);
+        throw coopError;
+      }
+
+      setAuthLoading(false);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -413,32 +441,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
 
       if (user) {
-        // User is signed in - reset connection state and load their data
-        logger.log('🔐 User signed in, resetting connection state');
+        // User is signed in with Firebase - now check if they are authorized
+        logger.log('🔐 Firebase auth successful, checking authorization...');
+        setAuthorizationStatus('checking');
+
+        const userEmail = user.email;
+        if (!userEmail) {
+          logger.error('❌ No email found for authenticated user');
+          setAuthorizationStatus('unauthorized');
+          setLoading(false);
+          return;
+        }
+
+        // Check if user is authorized using our service
+        const authorizationResult = await AuthorizationService.checkUserAuthorization(userEmail);
+
+        if (!authorizationResult.authorized) {
+          logger.log(`🚫 User ${userEmail} not authorized to use this app`);
+          logger.log('Authorization result:', authorizationResult);
+          setAuthorizationStatus('unauthorized');
+          // Keep currentUser so user can sign out, but don't set userData
+          setCurrentUser({
+            uid: user.uid,
+            email: userEmail,
+            displayName: user.displayName || undefined,
+            photoURL: user.photoURL || undefined,
+            role: 'normal', // Default role for unauthorized users
+            authorized: false,
+          });
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+
+        logger.log(
+          `✅ User ${userEmail} authorized as ${authorizationResult.role}, proceeding with app initialization`
+        );
+
+        // User is authorized - proceed with normal flow
+        setAuthorizationStatus('authorized');
         setIsOnline(true);
         setSyncStatus('synced');
         setCurrentUser({
           uid: user.uid,
-          email: user.email || '',
+          email: userEmail,
           displayName: user.displayName || undefined,
           photoURL: user.photoURL || undefined,
+          role: authorizationResult.role,
+          authorized: true,
         });
-        setLoading(true);
 
+        // Only load user data if they're authorized
+        setLoading(true);
         try {
           const data = await loadUserData(user.uid);
           setUserData(data);
-          logger.log('✅ User data loaded successfully after sign in');
+          logger.log('✅ User data loaded successfully after authorization check');
         } catch (error) {
-          logger.error('❌ Failed to load user data after sign in:', error);
+          logger.error('❌ Failed to load user data after authorization check:', error);
           setUserData({ allCrates: [], config: { wins: 0, gpWins: 0 } });
         }
       } else {
-        // User is signed out, clear data
+        // User is signed out, clear all data
         logger.log('🔐 User signed out, clearing data');
         setCurrentUser(null);
         setUserData(null);
-        setIsOnline(true); // Reset to online state for next sign in
+        setAuthorizationStatus('checking'); // Reset for new sign-in attempt (not unauthorized)
+        setIsOnline(true);
         setSyncStatus('synced');
       }
 
@@ -675,7 +744,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  const value: AuthContextType = {
+  const value: any = {
     currentUser,
     login: signInWithGoogle,
     register: signInWithGoogle, // Using Google auth for both login and register
@@ -708,6 +777,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Auth specific properties
     signInWithGoogle,
     authLoading,
+    // Authorization status
+    authorizationStatus,
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

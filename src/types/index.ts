@@ -4,6 +4,29 @@ export interface User {
   email: string;
   displayName?: string;
   photoURL?: string;
+  role?: 'admin' | 'normal';
+  authorized?: boolean;
+}
+
+// Import Firebase types
+import { Timestamp, FieldValue } from 'firebase/firestore';
+
+// User authorization and management types
+export interface AuthorizedUser {
+  id?: string; // Document ID
+  email: string; // lowercased Gmail address
+  role: 'admin' | 'normal';
+  status: 'active' | 'inactive';
+  invitedBy?: string; // Gmail of inviting admin
+  invitedAt?: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+}
+
+export interface UserInvitation {
+  email: string;
+  role: 'admin' | 'normal';
+  invitedBy: string; // Admin Gmail address
 }
 
 export interface Crate {
@@ -17,8 +40,8 @@ export interface Crate {
 
 export interface AuthContextType {
   currentUser: User | null;
-  login: () => Promise<any>; // Google sign in returns Firebase User
-  register: () => Promise<any>; // Google sign in returns Firebase User
+  login: () => Promise<void>; // Google sign in with redirect doesn't return user immediately
+  register: () => Promise<void>; // Google sign in with redirect doesn't return user immediately
   logout: () => Promise<void>;
   loading: boolean;
   // Extended properties for the app
@@ -37,7 +60,7 @@ export interface AuthContextType {
   loadOfflineData: () => any;
   clearOfflineData: () => void;
   // Auth specific properties
-  signInWithGoogle: () => Promise<any>;
+  signInWithGoogle: () => Promise<void>;
   authLoading: boolean;
 }
 
