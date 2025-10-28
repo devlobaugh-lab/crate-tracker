@@ -8,6 +8,7 @@ import {
   AuthErrorBoundary,
   FirebaseErrorBoundary,
 } from './components/common/ErrorBoundary.tsx';
+import logger from './utils/logger';
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx';
@@ -47,8 +48,8 @@ function AppContent() {
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   const [state, setState] = useState<AppState>(() => {
-    console.log('🚀 App initializing - checking data sources');
-    console.log(
+    logger.log('🚀 App initializing - checking data sources');
+    logger.log(
       '🚀 Current context state - isOnline:',
       isOnline,
       'syncStatus:',
@@ -59,29 +60,29 @@ function AppContent() {
 
     // Check if we're in offline mode and should prioritize localStorage
     if (!isOnline && syncStatus === 'error' && currentUser) {
-      console.log('🔄 App startup in offline mode - prioritizing localStorage');
+      logger.log('🔄 App startup in offline mode - prioritizing localStorage');
 
       try {
         const key = `crate-tracker-offline-${currentUser.uid}`;
-        console.log('🔍 Checking localStorage key:', key);
+        logger.log('🔍 Checking localStorage key:', key);
 
         // Debug: Check all localStorage keys
-        console.log('🔍 All localStorage keys:', Object.keys(localStorage));
+        logger.log('🔍 All localStorage keys:', Object.keys(localStorage));
 
         const savedData = localStorage.getItem(key);
-        console.log('📦 Raw localStorage data for key:', savedData);
+        logger.log('📦 Raw localStorage data for key:', savedData);
 
         if (savedData && savedData !== 'null' && savedData !== 'undefined') {
           const parsedData = JSON.parse(savedData);
           const { data, timestamp } = parsedData;
 
-          console.log('✅ Found offline data:');
-          console.log('  - Timestamp:', timestamp);
-          console.log('  - Wins:', data.config.wins);
-          console.log('  - Crates:', data.allCrates.length);
-          console.log('  - Full data:', data);
+          logger.log('✅ Found offline data:');
+          logger.log('  - Timestamp:', timestamp);
+          logger.log('  - Wins:', data.config.wins);
+          logger.log('  - Crates:', data.allCrates.length);
+          logger.log('  - Full data:', data);
 
-          console.log(
+          logger.log(
             '🔄 Initializing with offline data (wins:',
             data.config.wins,
             ', crates:',
@@ -90,22 +91,22 @@ function AppContent() {
           );
           return data;
         } else {
-          console.log('ℹ️ No valid offline data found in localStorage');
-          console.log('📦 localStorage value was:', savedData);
+          logger.log('ℹ️ No valid offline data found in localStorage');
+          logger.log('📦 localStorage value was:', savedData);
         }
       } catch (error) {
-        console.error('❌ Failed to load offline data during initialization:', error);
-        console.error('❌ Error details:', (error as Error).message);
+        logger.error('❌ Failed to load offline data during initialization:', error);
+        logger.error('❌ Error details:', (error as Error).message);
       }
     }
 
     // Use userData if available, otherwise use default empty state
     if (userData) {
-      console.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
+      logger.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
       return userData;
     }
 
-    console.log('🔄 Initializing with default empty state');
+    logger.log('🔄 Initializing with default empty state');
     return { allCrates: [], config: { wins: 0, gpWins: 0 } };
   });
 
@@ -115,18 +116,18 @@ function AppContent() {
   useEffect(() => {
     // Only update state from Firebase if we're truly online and not in error state
     if (userData && isOnline && syncStatus === 'synced') {
-      console.log('📡 Updating state from Firebase real-time data');
+      logger.log('📡 Updating state from Firebase real-time data');
       setState(userData);
     } else {
-      console.log('📡 Ignoring Firebase real-time data - not in online synced state');
+      logger.log('📡 Ignoring Firebase real-time data - not in online synced state');
     }
   }, [userData, isOnline, syncStatus]);
 
   // Save to localStorage when state changes and we're offline
   useEffect(() => {
     if (state && currentUser && !isOnline && syncStatus === 'error') {
-      console.log('💾 Saving offline state to localStorage');
-      console.log('💾 State data:', state);
+      logger.log('💾 Saving offline state to localStorage');
+      logger.log('💾 State data:', state);
       saveOfflineData(state);
     }
   }, [state, currentUser, isOnline, syncStatus, saveOfflineData]);
@@ -134,7 +135,7 @@ function AppContent() {
   // Clear localStorage when successfully synced
   useEffect(() => {
     if (isOnline && syncStatus === 'synced' && currentUser) {
-      console.log('🗑️ Clearing localStorage after successful sync');
+      logger.log('🗑️ Clearing localStorage after successful sync');
       clearOfflineData();
     }
   }, [isOnline, syncStatus, currentUser, clearOfflineData]);
@@ -142,15 +143,15 @@ function AppContent() {
   // Load offline data on app startup if we're offline
   useEffect(() => {
     if (currentUser && !isOnline && syncStatus === 'error') {
-      console.log('🔄 App startup - attempting to load offline data');
+      logger.log('🔄 App startup - attempting to load offline data');
       // Small delay to ensure localStorage functions are available
       setTimeout(() => {
         const offlineData = loadOfflineData();
         if (offlineData) {
-          console.log('✅ Setting offline data to state');
+          logger.log('✅ Setting offline data to state');
           setState(offlineData);
         } else {
-          console.log('ℹ️ No offline data found');
+          logger.log('ℹ️ No offline data found');
         }
       }, 100);
     }
@@ -160,7 +161,7 @@ function AppContent() {
   useEffect(() => {
     // Don't save if we're offline due to quota errors
     if (state && currentUser && isOnline && syncStatus !== 'error') {
-      console.log('📤 State changed, scheduling save...');
+      logger.log('📤 State changed, scheduling save...');
 
       // Clear any existing timeout
       if (saveTimeoutRef.current) {
@@ -169,14 +170,14 @@ function AppContent() {
 
       // Set new timeout - this ensures saves happen even with rapid clicks
       const timeout = setTimeout(() => {
-        console.log('💾 Executing scheduled save');
+        logger.log('💾 Executing scheduled save');
         saveUserData(state);
         saveTimeoutRef.current = null;
       }, 500); // Debounce saves by 500ms
 
       saveTimeoutRef.current = timeout;
     } else if (!isOnline || syncStatus === 'error') {
-      console.log('⏸️ Skipping scheduled save due to offline/quota error state');
+      logger.log('⏸️ Skipping scheduled save due to offline/quota error state');
     }
 
     return () => {
@@ -387,7 +388,7 @@ function App() {
     <ErrorBoundary
       showErrorDetails={process.env.NODE_ENV === 'development'}
       onError={(error, errorInfo) => {
-        console.error('App-level error:', error, errorInfo);
+        logger.error('App-level error:', error, errorInfo);
         // Could send to error reporting service
       }}
     >

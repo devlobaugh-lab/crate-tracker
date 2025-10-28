@@ -9,6 +9,7 @@ import {
 import { doc, getDoc, setDoc, onSnapshot, FirestoreError } from 'firebase/firestore';
 import { auth, db, googleProvider, checkNetworkStatus } from './firebase.ts';
 import { User, AuthContextType } from './types';
+import logger from './utils/logger';
 
 // Define the state interface
 interface AppState {
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signInWithPopup(auth, googleProvider);
       return result.user;
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      logger.error('Error signing in with Google:', error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -78,17 +79,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load user data from Firestore
   async function loadUserData(userId: string): Promise<AppState> {
-    console.log('📥 Loading user data for:', userId?.substring(0, 8) + '...');
+    logger.log('📥 Loading user data for:', userId?.substring(0, 8) + '...');
 
     try {
       const userDocRef = doc(db, 'users', userId);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        console.log('✅ User data loaded successfully');
+        logger.log('✅ User data loaded successfully');
         return userDoc.data() as AppState;
       } else {
-        console.log('📝 Creating new user document');
+        logger.log('📝 Creating new user document');
         // Create default user data if it doesn't exist
         const defaultData: AppState = {
           allCrates: [],
@@ -96,19 +97,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         try {
           await setDoc(userDocRef, defaultData);
-          console.log('✅ Default user data created');
+          logger.log('✅ Default user data created');
         } catch (createError) {
-          console.error('❌ Error creating default user data:', createError);
-          console.error('❌ Create error code:', (createError as FirestoreError).code);
-          console.error('❌ Create error message:', (createError as FirestoreError).message);
+          logger.error('❌ Error creating default user data:', createError);
+          logger.error('❌ Create error code:', (createError as FirestoreError).code);
+          logger.error('❌ Create error message:', (createError as FirestoreError).message);
           // Continue with default data even if save fails
         }
         return defaultData;
       }
     } catch (error) {
-      console.error('❌ Error loading user data:', error);
-      console.error('❌ Load error code:', (error as FirestoreError).code);
-      console.error('❌ Load error message:', (error as FirestoreError).message);
+      logger.error('❌ Error loading user data:', error);
+      logger.error('❌ Load error code:', (error as FirestoreError).code);
+      logger.error('❌ Load error message:', (error as FirestoreError).message);
 
       // Only treat as offline for specific network/quota errors
       const errorCode = (error as any)?.code;
@@ -121,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         errorCode === 'resource-exhausted' || (error as Error).message?.includes('Quota exceeded');
 
       if (isNetworkError || isQuotaError) {
-        console.log('🚫 Network/quota error detected - staying online but will retry');
+        logger.log('🚫 Network/quota error detected - staying online but will retry');
         setSyncStatus('pending');
       }
 
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     setActionQueue(prev => [...prev, action]);
-    console.log('Action queued:', action);
+    logger.log('Action queued:', action);
   }, []);
 
   // Enhanced save user data with offline support and retry logic
@@ -149,23 +150,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const maxRetries = 3;
       const retryDelay = 1000 * Math.pow(2, retryCount); // Exponential backoff
 
-      console.log('🔄 saveUserData called with:', {
+      logger.log('🔄 saveUserData called with:', {
         userId: userId?.substring(0, 8) + '...',
         dataKeys: Object.keys(data),
         retryCount,
       });
 
       try {
-        console.log('💾 Saving user data to Firestore...');
+        logger.log('💾 Saving user data to Firestore...');
         const userDocRef = doc(db, 'users', userId);
         await setDoc(userDocRef, data, { merge: true });
         setSyncStatus('synced');
-        console.log('✅ Firestore save successful');
+        logger.log('✅ Firestore save successful');
         return true; // Success
       } catch (error) {
-        console.error('❌ Error saving user data to Firestore:', error);
-        console.error('❌ Error code:', (error as FirestoreError).code);
-        console.error('❌ Error message:', (error as FirestoreError).message);
+        logger.error('❌ Error saving user data to Firestore:', error);
+        logger.error('❌ Error code:', (error as FirestoreError).code);
+        logger.error('❌ Error message:', (error as FirestoreError).message);
 
         // Check if it's a network-related error (retry these)
         const errorCode = (error as any)?.code;
@@ -185,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (isNetworkError && retryCount < maxRetries) {
           setSyncStatus('pending');
-          console.log(
+          logger.log(
             `Retrying save operation in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`
           );
 
@@ -196,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const result = await saveUserData(userId, data, retryCount + 1);
                 resolve(result);
               } catch (retryError) {
-                console.error('Retry failed:', retryError);
+                logger.error('Retry failed:', retryError);
                 resolve(false); // Failed after retry
               }
             }, retryDelay);
@@ -205,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // For quota errors, immediately go offline without retrying
           setIsOnline(false);
           setSyncStatus('error');
-          console.error('Quota exceeded - switching to offline mode:', (error as Error).message);
+          logger.error('Quota exceeded - switching to offline mode:', (error as Error).message);
 
           // Queue the action for later when quota is restored
           queueAction('save', { userId, data });
@@ -214,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // For other non-network errors or max retries reached, treat as offline
           setIsOnline(false);
           setSyncStatus('error');
-          console.error(
+          logger.error(
             'Save failed after retries or due to non-network error:',
             (error as Error).message
           );
@@ -242,18 +243,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           case 'save': {
             const success = await saveUserData(action.payload.userId, action.payload.data);
             if (!success) {
-              console.error('Failed to process queued save action');
+              logger.error('Failed to process queued save action');
               // Re-queue if it fails
               setActionQueue(prev => [...prev, action]);
             }
             break;
           }
           default: {
-            console.warn('Unknown action type:', action.type);
+            logger.warn('Unknown action type:', action.type);
           }
         }
       } catch (error) {
-        console.error('Failed to process queued action:', error);
+        logger.error('Failed to process queued action:', error);
         // Re-queue if it fails
         setActionQueue(prev => [...prev, action]);
       }
@@ -285,16 +286,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Verify it was saved
           const saved = localStorage.getItem(`crate-tracker-offline-${currentUser.uid}`);
           if (saved === dataString) {
-            console.log('💾 Successfully saved offline data to localStorage');
-            console.log('💾 Data preview:', {
+            logger.log('💾 Successfully saved offline data to localStorage');
+            logger.log('💾 Data preview:', {
               wins: data.config.wins,
               crates: data.allCrates.length,
             });
           } else {
-            console.error('❌ Failed to save offline data to localStorage');
+            logger.error('❌ Failed to save offline data to localStorage');
           }
         } catch (error) {
-          console.error('❌ Error saving to localStorage:', error);
+          logger.error('❌ Error saving to localStorage:', error);
         }
       }
     },
@@ -304,32 +305,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadOfflineData = useCallback((): AppState | null => {
     if (currentUser) {
       const key = `crate-tracker-offline-${currentUser.uid}`;
-      console.log('🔍 Looking for localStorage key:', key);
+      logger.log('🔍 Looking for localStorage key:', key);
 
       const savedData = localStorage.getItem(key);
-      console.log('📦 Raw localStorage data:', savedData);
+      logger.log('📦 Raw localStorage data:', savedData);
 
       if (savedData) {
         try {
           const parsedData = JSON.parse(savedData);
           const { data, queuedActions, timestamp } = parsedData;
 
-          console.log('📤 Loaded offline data from localStorage:');
-          console.log('  - Timestamp:', timestamp);
-          console.log('  - Wins:', data.config.wins);
-          console.log('  - Crates:', data.allCrates.length);
-          console.log('  - Queued actions:', queuedActions.length);
+          logger.log('📤 Loaded offline data from localStorage:');
+          logger.log('  - Timestamp:', timestamp);
+          logger.log('  - Wins:', data.config.wins);
+          logger.log('  - Crates:', data.allCrates.length);
+          logger.log('  - Queued actions:', queuedActions.length);
 
           // Don't automatically set state - return the data for App.jsx to handle
-          console.log('✅ Retrieved offline data from localStorage');
+          logger.log('✅ Retrieved offline data from localStorage');
           return data;
         } catch (error) {
-          console.error('❌ Failed to parse localStorage data:', error);
-          console.error('❌ Raw data that failed to parse:', savedData);
+          logger.error('❌ Failed to parse localStorage data:', error);
+          logger.error('❌ Raw data that failed to parse:', savedData);
           return null;
         }
       } else {
-        console.log('ℹ️ No localStorage data found for key:', key);
+        logger.log('ℹ️ No localStorage data found for key:', key);
       }
     }
     return null;
@@ -338,7 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearOfflineData = useCallback((): void => {
     if (currentUser) {
       localStorage.removeItem(`crate-tracker-offline-${currentUser.uid}`);
-      console.log('🗑️ Cleared offline data from localStorage');
+      logger.log('🗑️ Cleared offline data from localStorage');
     }
   }, [currentUser]);
 
@@ -346,18 +347,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only process queue if we're online AND not in error state
     if (isOnline && actionQueue.length > 0 && syncStatus !== 'error') {
-      console.log('🔄 Processing action queue - back online');
+      logger.log('🔄 Processing action queue - back online');
       processActionQueue();
     } else if (syncStatus === 'error' && actionQueue.length > 0) {
-      console.log('⏸️ Skipping action queue processing due to error state');
+      logger.log('⏸️ Skipping action queue processing due to error state');
     }
   }, [isOnline, actionQueue.length, syncStatus, processActionQueue]);
 
   // Listen for global Firebase quota exceeded events
   useEffect(() => {
     const handleQuotaExceeded = (event: CustomEvent) => {
-      console.log('🚨 Received global quota exceeded event:', event.detail);
-      console.log(
+      logger.log('🚨 Received global quota exceeded event:', event.detail);
+      logger.log(
         '🚨 Current state before offline switch - isOnline:',
         isOnline,
         'syncStatus:',
@@ -373,12 +374,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forceOfflineMode();
       });
 
-      console.log('🚨 Successfully switched to offline mode due to quota exceeded');
+      logger.log('🚨 Successfully switched to offline mode due to quota exceeded');
     };
 
     const handleOperationBlocked = (event: CustomEvent) => {
-      console.log('🚨 Received blocked operation event:', event.detail);
-      console.log('🚨 Firebase operation blocked by client - switching to offline mode');
+      logger.log('🚨 Received blocked operation event:', event.detail);
+      logger.log('🚨 Firebase operation blocked by client - switching to offline mode');
 
       // Treat blocked operations as offline scenario
       setIsOnline(false);
@@ -389,15 +390,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forceOfflineMode();
       });
 
-      console.log('🚨 Successfully switched to offline mode due to blocked operations');
+      logger.log('🚨 Successfully switched to offline mode due to blocked operations');
     };
 
-    console.log('🔧 Setting up global Firebase event listeners');
+    logger.log('🔧 Setting up global Firebase event listeners');
     window.addEventListener('firebase-quota-exceeded', handleQuotaExceeded as EventListener);
     window.addEventListener('firebase-operation-blocked', handleOperationBlocked as EventListener);
 
     return () => {
-      console.log('🔧 Removing global Firebase event listeners');
+      logger.log('🔧 Removing global Firebase event listeners');
       window.removeEventListener('firebase-quota-exceeded', handleQuotaExceeded as EventListener);
       window.removeEventListener(
         'firebase-operation-blocked',
@@ -409,11 +410,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      console.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
+      logger.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
 
       if (user) {
         // User is signed in - reset connection state and load their data
-        console.log('🔐 User signed in, resetting connection state');
+        logger.log('🔐 User signed in, resetting connection state');
         setIsOnline(true);
         setSyncStatus('synced');
         setCurrentUser({
@@ -427,14 +428,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const data = await loadUserData(user.uid);
           setUserData(data);
-          console.log('✅ User data loaded successfully after sign in');
+          logger.log('✅ User data loaded successfully after sign in');
         } catch (error) {
-          console.error('❌ Failed to load user data after sign in:', error);
+          logger.error('❌ Failed to load user data after sign in:', error);
           setUserData({ allCrates: [], config: { wins: 0, gpWins: 0 } });
         }
       } else {
         // User is signed out, clear data
-        console.log('🔐 User signed out, clearing data');
+        logger.log('🔐 User signed out, clearing data');
         setCurrentUser(null);
         setUserData(null);
         setIsOnline(true); // Reset to online state for next sign in
@@ -450,12 +451,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Set up real-time listener for user data changes
   useEffect(() => {
     if (!currentUser) {
-      console.log('⏸️ No current user - skipping real-time listener setup');
+      logger.log('⏸️ No current user - skipping real-time listener setup');
       return;
     }
 
     // Always try to set up the listener when we have a current user
-    console.log(
+    logger.log(
       '🔄 Setting up real-time listener for user:',
       currentUser.uid.substring(0, 8) + '...'
     );
@@ -465,14 +466,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userDocRef,
       doc => {
         if (doc.exists() && !ignoreRemoteChanges) {
-          console.log('📡 Real-time data update received from Firebase');
+          logger.log('📡 Real-time data update received from Firebase');
           setUserData(doc.data() as AppState);
         }
       },
       error => {
-        console.error('❌ Real-time listener error:', error);
-        console.error('❌ Listener error code:', (error as FirestoreError).code);
-        console.error('❌ Listener error message:', (error as FirestoreError).message);
+        logger.error('❌ Real-time listener error:', error);
+        logger.error('❌ Listener error code:', (error as FirestoreError).code);
+        logger.error('❌ Listener error message:', (error as FirestoreError).message);
 
         // Only treat specific errors as offline-worthy
         const errorCode = (error as any)?.code;
@@ -488,7 +489,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // For most listener errors, just log them but don't go offline
         // Only go offline for clear network/quota issues
         if (isNetworkError || isQuotaError) {
-          console.log('🚫 Listener network/quota error - staying online but logging');
+          logger.log('🚫 Listener network/quota error - staying online but logging');
           // Don't automatically go offline for listener errors
           // The app can still function and retry operations
         }
@@ -496,7 +497,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
-      console.log('🛑 Cleaning up real-time listener');
+      logger.log('🛑 Cleaning up real-time listener');
       unsubscribe();
     };
   }, [currentUser, ignoreRemoteChanges]);
@@ -506,7 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkConnection = async () => {
       // Don't check connection if we're in quota error state
       if (syncStatus === 'error' && !isOnline) {
-        console.log('⏸️ Skipping connection check due to quota error state');
+        logger.log('⏸️ Skipping connection check due to quota error state');
         return;
       }
 
@@ -536,7 +537,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Only run quota reset checks when in offline quota error state
     if (syncStatus === 'error' && !isOnline) {
-      console.log('⏰ Setting up smart quota reset detection (hourly at :02)');
+      logger.log('⏰ Setting up smart quota reset detection (hourly at :02)');
 
       const scheduleNextQuotaCheck = (): NodeJS.Timeout => {
         const now = new Date();
@@ -550,7 +551,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         const millisecondsUntilNextCheck = nextHour.getTime() - now.getTime();
 
-        console.log(
+        logger.log(
           `⏰ Next quota check scheduled for: ${nextHour.toLocaleTimeString()} (${Math.round(millisecondsUntilNextCheck / 60000)} minutes)`
         );
 
@@ -560,14 +561,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       const performQuotaCheck = async (): Promise<void> => {
-        console.log('🔄 Checking if Firebase quota has been restored...');
+        logger.log('🔄 Checking if Firebase quota has been restored...');
 
         try {
           // Try a minimal Firebase operation to test quota
           const networkAvailable = await checkNetworkStatus();
 
           if (networkAvailable) {
-            console.log('✅ Firebase quota appears to be restored!');
+            logger.log('✅ Firebase quota appears to be restored!');
             setIsOnline(true);
             setSyncStatus('syncing');
 
@@ -576,11 +577,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Process any queued actions
             setTimeout(() => {
-              console.log('🔄 Processing queued actions after quota restoration');
+              logger.log('🔄 Processing queued actions after quota restoration');
               processActionQueue();
             }, 2000);
           } else {
-            console.log('⏸️ Firebase quota still exceeded - scheduling next check');
+            logger.log('⏸️ Firebase quota still exceeded - scheduling next check');
             // Schedule next check (will be at next hour :02)
             scheduleNextQuotaCheck();
           }
@@ -592,10 +593,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             (error as Error).message?.includes('Quota exceeded');
 
           if (isStillQuotaError) {
-            console.log('⏸️ Quota still exceeded - scheduling next check');
+            logger.log('⏸️ Quota still exceeded - scheduling next check');
             scheduleNextQuotaCheck();
           } else {
-            console.log('⚠️ Different error detected:', (error as Error).message);
+            logger.log('⚠️ Different error detected:', (error as Error).message);
             // Could be network issues, schedule next check anyway
             scheduleNextQuotaCheck();
           }
@@ -606,7 +607,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firstCheckTimeout = scheduleNextQuotaCheck();
 
       return () => {
-        console.log('🛑 Clearing quota reset detection timeout');
+        logger.log('🛑 Clearing quota reset detection timeout');
         clearTimeout(firstCheckTimeout);
       };
     }
@@ -685,7 +686,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveUserData: currentUser
       ? (data: AppState) => saveUserData(currentUser.uid, data)
       : () => {
-          console.warn('Cannot save data - no authenticated user');
+          logger.warn('Cannot save data - no authenticated user');
           return Promise.resolve(false);
         },
     loadUserData: currentUser

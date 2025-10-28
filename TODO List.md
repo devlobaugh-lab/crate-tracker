@@ -1,34 +1,47 @@
-# TODO List - GitHub Integration
+# TODO List - Code Quality Improvements
 
-## Phase 1: GitHub Actions CI
+## Code Review Summary
+Completed analysis of the crate-tracker-vite codebase identifying key issues in readability, security, and stability.
 
-- [x] Set up GitHub repository for crate-tracker-vite
-- [x] Create .github/workflows directory
-- [x] Configure CI workflow file (.github/workflows/ci.yml)
-  - [x] Install Node.js and dependencies
-  - [x] Run linting (ESLint)
-  - [x] Run tests (if any exist)
-  - [x] Build the project with Vite
-- [x] Test CI workflow locally or push to trigger
-- [x] Add badges to README.md for CI status
+## Phase 1: Implement Clean Logging System
+- [x] Create src/utils/logger.ts with conditional development logging
+- [x] Replace all console.log/debug calls in firebase.ts with logger utility
+- [x] Replace console.log/debug calls in AuthContext.tsx with logger calls
+- [x] Replace console.log/debug calls in App.tsx with logger calls
 
-## Phase 2: GitHub Actions Deploy to Firebase
+## Phase 2: Refactor Oversized Components
+- [ ] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)
+- [ ] Extract useDebouncedSave hook from AuthContext.tsx (data persistence logic)
+- [ ] Extract useAppState hook from App.tsx (main app state management)
+- [ ] Extract useCrateManagement hook from App.tsx (add/undo crate operations)
 
-- [x] Configure Firebase CLI in CI
-  - [x] Set up Firebase service account key as secret
-  - [x] Install Firebase CLI in workflow
-- [x] Update deploy workflow file (.github/workflows/deploy.yml)
-  - [x] Build the project
-  - [x] Deploy to Firebase Hosting
-  - [x] Optionally deploy Firestore rules if needed
-- [x] Set up deployment triggers (on push to main branch)
-- [x] Configure Firebase project settings for deployment
-- [x] Test deployment by merging to main branch
-- [x] Verify site is live on Firebase Hosting
+## Phase 3: Simplify Sync and Type Management
+- [ ] Create useSyncManager hook to centralize online/offline detection
+- [ ] Refactor AuthContextType into focused interfaces:
+  - AuthenticationType (auth-related methods)
+  - DataManagementType (save/load/userData operations)
+  - SyncManagementType (online/offline queue management)
+- [ ] Simplify firebase.ts by removing global console overrides
 
-## Phase 3: Additional Integrations (if applicable)
+## Phase 4: Enhance Security & Input Validation
+- [ ] Install and implement Zod schema validation for user data import/export
+- [ ] Install file-saver library to replace direct DOM manipulation in exportUserData
+- [ ] Add proper input sanitization for all user-imported data
+- [ ] Validate Firebase configuration environment variables
 
-- [x] Set up dependency vulnerability scanning
-- [x] Configure code coverage reports
-- [x] Add auto-formatting or other checks
+## Phase 5: Production Error Reporting
+- [ ] Add Sentry SDK for production error tracking and reporting
+- [ ] Replace global console overrides with proper Firebase error handler
+- [ ] Implement structured error logging throughout the application
 
+## Phase 6: Testing & Performance
+- [ ] Write integration tests for offline sync scenarios and queue management
+- [ ] Add performance tests for debounced save operations
+- [ ] Implement React.memo and useMemo optimizations for expensive operations
+- [ ] Consider pagination for large crate histories (if applicable)
+
+## Phase 7: Code Quality Verification
+- [ ] Run full test suite after each phase
+- [ ] Verify ESLint rules are passing
+- [ ] Manual testing of offline/online functionality
+- [ ] Performance testing and bundle size analysis
