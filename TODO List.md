@@ -1,6 +1,6 @@
 # TODO List - 
 # Features
-## 1: Add invite system to unlock the app for people
+## Feature 1: Add invite system to unlock the app for people
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
 ### New Database Schema
@@ -52,6 +52,26 @@
 - [ ] Security audit: prevent admin privilege escalation
 - [ ] Deploy Firebase Functions and update client configuration
 
+# Feature 2 - Fast forward
+## Want to give the user a way to enter in a new number of wins (larger than current), and have the application add that number of crates to the crate history, using its predictive algo so the user can "catch up"
+### Use case: User needs to be able to enter in an updated GP win count too and have GP crates added to history. 
+### Note: This is different than just editing the Total count and GP wins values.
+### App flow
+- I'm thinking there could be a fast-forward button that would show the number of GP and total wins and would prompt the user for new values for both. 
+- It should prompt for GP wins first
+- The app will then add the number of new GP crates (new GP crates - old GP crates)
+- The app will add these new crates to the total wins amount
+- the app will then prompt the user for the new total wins count
+- The app will add the number of crates of the diff (new total wins - old total wins)
+- The app will use the predictor to determine which crate to enter.
+
+## Feature 2 Implementation
+- [x] Add Fast Forward button to main view
+- [x] Create FastForward modal component with two-step prompt flow
+- [x] Implement fast-forward handler in App.tsx with bulk addition logic
+- [x] Add validation (new values >= current values)
+- [x] Handle sync/state updates with setIgnoreRemoteChanges
+- [x] Test edge cases (prediction with '?', large diffs)
 
 # Code Quality Improvements
 ## Code Improvements
