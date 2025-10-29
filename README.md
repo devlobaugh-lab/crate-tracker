@@ -15,12 +15,45 @@ Data Storage and Auth services provided by Firebase
     - Allows user to reset all data in the app and start from scratch
     - Allows user to create a backup to file of their data (the crates they have entered and # of wins)
     - Allows user to load a file backup of their data.
-- Requires login with google account
+- Requires login with google account (invite-only via admin)
     - allows app to have different users with different save data
     - data is saved in cloud (firebase), allowing user to move between devices
+- Gmail-only invite system with admin controls
 - Mobile-first responsive layout using TailwindCSS.
 - Dockerized for easy deployment.
-- Setup to be hosted on Firebase as well. 
+- Setup to be hosted on Firebase as well.
+
+## Admin Invitation System
+
+This app uses an invite-only system for security. Admins can invite Gmail users to join.
+
+### For Admins: Sending Invitations
+
+1. **Authorize User in App**: Use the Admin panel to add users (this grants database access)
+2. **Send Email Externally**: Use the provided script or your own SMTP setup to send the invitation email
+
+#### Option 1: Use the Provided Email Script
+
+```bash
+# Set up Gmail App Password
+export SMTP_EMAIL="your-gmail@gmail.com"
+export SMTP_PASSWORD="your-gmail-app-password"
+
+# Send invitation
+node scripts/send-invite.js user@gmail.com admin@gmail.com normal
+```
+
+**Setup Gmail App Password:**
+1. Enable 2FA on your Gmail account
+2. Generate an App Password: https://support.google.com/accounts/answer/185833
+
+#### Option 2: Manual Email Sending
+
+The admin interface provides:
+- Email preview with HTML content
+- Copy-to-clipboard buttons for HTML/text content
+- Open in Gmail button with pre-filled content
+- Raw email content you can use with any SMTP service (SendGrid, Mailgun, etc.)
 
 ## Setup
 

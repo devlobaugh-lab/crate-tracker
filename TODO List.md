@@ -38,12 +38,14 @@
 - [x] Implement Gmail address validation and normalization
 - [x] Add admin panel access button to ConfigView (role-based visibility)
 
-## Phase 4: Email Invitation System
-- [ ] Set up email sending through Google SMTP
-- [ ] Create `sendInvite` function with email template
-- [ ] Add invite sending functionality to AdminView
-- [ ] Implement invitation status tracking
-- [ ] Add invite email UI with admin email preview
+## Phase 4: Email Invitation System (External SMTP)
+- [x] Set up email sending through Google SMTP (via external script)
+- [x] Create `scripts/send-invite.js` for automated email sending
+- [x] Add nodemailer integration to main project
+- [x] Add invite sending functionality to AdminView (with preview)
+- [x] Implement user authorization without automatic email sending
+- [x] Add invite email UI with admin email preview and copy/paste options
+- [x] Update documentation for external SMTP setup
 
 ## Phase 5: Testing & Production Readiness
 - [ ] Create admin user management tests
