@@ -1,15 +1,9 @@
-# TODO List - Code Quality Improvements
-## Features
-## 1: Add invite system to unlock the app for people
+# TODO List - 
+# Features
+## Feature 1: Add invite system to unlock the app for people
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
-### Prerequisites & Decisions
-- Email Service: Firebase Functions with SendGrid integration
-- Initial Admin: Manual Firestore document creation
-- User Base: Restricted to Gmail addresses only
-- Seeding: Create script later for automated admin setup
-
-### Database Schema
+### New Database Schema
 **New Collection: `/authorizedUsers/{gmailAddress}`**
 - email: string (lowercased Gmail address)
 - role: 'admin' | 'normal'
@@ -39,31 +33,47 @@
 
 ## Phase 3: Admin Interface Components
 - [x] Create `src/components/views/AdminView.tsx`
-- [ ] Build user management table (list/add/edit/deactivate users)
-- [ ] Add role toggle functionality (normal ↔ admin)
-- [ ] Implement Gmail address validation and normalization
+- [x] Build user management table (list/add/edit/deactivate users)
+- [x] Add role toggle functionality (normal ↔ admin)
+- [x] Implement Gmail address validation and normalization
 - [x] Add admin panel access button to ConfigView (role-based visibility)
 
 ## Phase 4: Email Invitation System
-- [ ] Set up Firebase Functions with SendGrid integration
-- [ ] Create `sendInvite` Cloud Function with email template
+- [ ] Set up email sending through Google SMTP
+- [ ] Create `sendInvite` function with email template
 - [ ] Add invite sending functionality to AdminView
 - [ ] Implement invitation status tracking
 - [ ] Add invite email UI with admin email preview
 
-## Phase 5: UI Integration & UX
-- [ ] Update Login component for invite-only messaging
-- [ ] Add "Request Access" flow for unauthorized Gmail users
-- [ ] Handle role-based feature access throughout app
-- [ ] Add loading states and error handling for authorization checks
-
-## Phase 6: Testing & Production Readiness
+## Phase 5: Testing & Production Readiness
 - [ ] Create admin user management tests
 - [ ] Test invite email workflow end-to-end
 - [ ] Validate Gmail-only restriction
 - [ ] Security audit: prevent admin privilege escalation
 - [ ] Deploy Firebase Functions and update client configuration
 
+# Feature 2 - Fast forward
+## Want to give the user a way to enter in a new number of wins (larger than current), and have the application add that number of crates to the crate history, using its predictive algo so the user can "catch up"
+### Use case: User needs to be able to enter in an updated GP win count too and have GP crates added to history. 
+### Note: This is different than just editing the Total count and GP wins values.
+### App flow
+- I'm thinking there could be a fast-forward button that would show the number of GP and total wins and would prompt the user for new values for both. 
+- It should prompt for GP wins first
+- The app will then add the number of new GP crates (new GP crates - old GP crates)
+- The app will add these new crates to the total wins amount
+- the app will then prompt the user for the new total wins count
+- The app will add the number of crates of the diff (new total wins - old total wins)
+- The app will use the predictor to determine which crate to enter.
+
+## Feature 2 Implementation
+- [x] Add Fast Forward button to main view
+- [x] Create FastForward modal component with two-step prompt flow
+- [x] Implement fast-forward handler in App.tsx with bulk addition logic
+- [x] Add validation (new values >= current values)
+- [x] Handle sync/state updates with setIgnoreRemoteChanges
+- [x] Test edge cases (prediction with '?', large diffs)
+
+# Code Quality Improvements
 ## Code Improvements
 Key issues to make in readability, security, and stability.
 

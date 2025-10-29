@@ -14,6 +14,7 @@ function CrateGrid({ onCrateSelect, onUndo }: CrateGridProps) {
     <section className='mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg'>
       <div className='text-sm text-gray-200 mb-4 font-semibold flex justify-between items-center'>
         <div>Choose current crate</div>
+
         <button
           onClick={onUndo}
           className='text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200'
