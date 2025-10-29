@@ -17,10 +17,12 @@ import ConnectionStatus from './components/common/ConnectionStatus.tsx';
 import ConfigView from './components/views/ConfigView.tsx';
 import AdminView from './components/views/AdminView.tsx';
 import IntroView from './components/views/IntroView.tsx';
+import FastForward from './components/views/FastForward.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
 import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts';
-import { APP_VERSION, CRATE_TYPES } from './utils/constants.ts';
+import { APP_VERSION, CRATE_TYPES, MASTER_PATTERN } from './utils/constants.ts';
+import { getNextCrateValue } from './utils/patternUtils';
 
 // Define the state interface
 interface AppState {
@@ -228,6 +230,37 @@ function AppContent() {
   const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
     (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
   );
+  const [showFastForward, setShowFastForward] = useState(false);
+
+  // Fast forward submit handler
+  function fastForwardSubmit(additionalGP: number, newTotal: number) {
+    const currentGP = state.config.gpWins;
+
+    const diffGP = additionalGP;
+    const diffTotal = newTotal - (state.config.wins + additionalGP);
+
+    let newAllCrates = [...state.allCrates];
+    const newConfig = { ...state.config, gpWins: currentGP + diffGP };
+
+    // Add GP crates
+    for (let i = 0; i < diffGP; i++) {
+      newAllCrates = [...newAllCrates, 'X'];
+      newConfig.wins += 1;
+    }
+
+    // Add remaining total wins using predictor
+    for (let i = 0; i < diffTotal; i++) {
+      const next = getNextCrateValue(newAllCrates, MASTER_PATTERN) || '?';
+      newAllCrates = [...newAllCrates, next];
+      newConfig.wins += 1;
+    }
+
+    setState({ ...state, allCrates: newAllCrates, config: newConfig });
+    setShowFastForward(false);
+
+    // Ignore remote changes for a longer period due to bulk additions
+    setIgnoreWithTimeout(10000);
+  }
 
   // Handle different authorization states
   if (authorizationStatus === 'unauthorized') {
@@ -249,9 +282,16 @@ function AppContent() {
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
-      <div className='flex justify-end pr-2 mb-2'>
+      <div className='flex justify-end pl-2 mb-2 gap-4'>
         <button
-          className='pl-2 text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
+          className='flex py-2 px-3 rounded-lg bg-pink-700 text-white font-semibold text-sm shadow hover:bg-pink-900 transition-colors duration-200'
+          // className='text-sm text-gray-300 hover:text-blue-400 transition-colors duration-200'
+          onClick={() => setShowFastForward(true)}
+        >
+          Fast Forward
+        </button>
+        <button
+          className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={() => setView('config')}
         >
           <Cog6ToothIcon className='w-5 h-5' />
@@ -402,6 +442,15 @@ function AppContent() {
         </div>
         <div>App version {APP_VERSION}</div>
       </footer>
+
+      {showFastForward && (
+        <FastForward
+          onSubmit={fastForwardSubmit}
+          onCancel={() => setShowFastForward(false)}
+          currentGP={state.config.gpWins}
+          currentTotal={state.config.wins}
+        />
+      )}
     </div>
   );
 }
