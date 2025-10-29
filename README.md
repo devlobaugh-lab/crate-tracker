@@ -30,30 +30,15 @@ This app uses an invite-only system for security. Admins can invite Gmail users 
 ### For Admins: Sending Invitations
 
 1. **Authorize User in App**: Use the Admin panel to add users (this grants database access)
-2. **Send Email Externally**: Use the provided script or your own SMTP setup to send the invitation email
-
-#### Option 1: Use the Provided Email Script
-
-```bash
-# Set up Gmail App Password
-export SMTP_EMAIL="your-gmail@gmail.com"
-export SMTP_PASSWORD="your-gmail-app-password"
-
-# Send invitation
-node scripts/send-invite.js user@gmail.com admin@gmail.com normal
-```
-
-**Setup Gmail App Password:**
-1. Enable 2FA on your Gmail account
-2. Generate an App Password: https://support.google.com/accounts/answer/185833
-
-#### Option 2: Manual Email Sending
+2. **Send Email Manually**: The admin interface provides email content for manual sending
 
 The admin interface provides:
 - Email preview with HTML content
 - Copy-to-clipboard buttons for HTML/text content
 - Open in Gmail button with pre-filled content
-- Raw email content you can use with any SMTP service (SendGrid, Mailgun, etc.)
+- Email content formatted for any SMTP service
+
+**Note**: All authorization is handled client-side within Firebase's free tier, eliminating the need for server-side functions.
 
 ## Setup
 
@@ -123,10 +108,13 @@ npm run build
 ```
 
 ## Firebase Deployment
+
+### Deploy Hosting
 ```bash
 cd <directory of this app>
 npm run build
 firebase login
+firebase use crate-tracker-38b6e  # or your project ID
 firebase deploy --only hosting
 ```
 
