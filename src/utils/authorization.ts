@@ -406,7 +406,8 @@ This invitation was sent automatically.`;
   /**
    * Normalize email to lowercase
    */
-  static normalizeEmail(email: string): string {
+  static normalizeEmail(email: string | null | undefined): string {
+    if (!email) return '';
     return email.toLowerCase().trim();
   }
 }
