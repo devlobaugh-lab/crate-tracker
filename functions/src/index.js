@@ -14,7 +14,7 @@ exports.sendInvite = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Authentication required.');
   }
 
-  const { email: inviteeEmail, role } = data;
+  const { email: inviteeEmail, role, previewOnly = false } = data;
 
   if (!inviteeEmail || !role) {
     throw new functions.https.HttpsError('invalid-argument', 'Missing email or role parameter.');
@@ -48,6 +48,48 @@ exports.sendInvite = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('already-exists', 'This email address is already authorized.');
     }
 
+    // Generate email content
+    const roleText = role === 'admin' ? 'Administrator' : 'Regular User';
+    const emailSubject = 'You\'re invited to join Crate Tracker!';
+    const emailHtml = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2>Welcome to Crate Tracker!</h2>
+  <p>You're invited to join Crate Tracker.</p>
+  <p>Crate Tracker is a tool for tracking your F1 Crate pattern.</p>
+  <p>To get started:</p>
+  <ol>
+    <li>Visit <a href="https://crate-tracker-38b6e.web.app/">https://crate-tracker-38b6e.web.app/</a></li>
+    <li>Sign in with your Gmail account</li>
+    <li>Start tracking your crates!</li>
+  </ol>
+  <hr>
+  <p style="font-size: 12px; color: #666;">
+    This invitation was sent automatically. Please do not reply to this message.
+  </p>
+</div>`;
+
+    const emailText = `Welcome to Crate Tracker!
+
+Visit: https://crate-tracker-38b6e.web.app/
+Sign in with your Gmail account
+
+---
+This invitation was sent automatically.`;
+
+    // If preview only, return email content without creating user
+    if (previewOnly) {
+      return {
+        success: true,
+        message: 'Email preview generated successfully.',
+        emailContent: {
+          to: inviteeEmail,
+          subject: emailSubject,
+          html: emailHtml,
+          text: emailText,
+        }
+      };
+    }
+
     // Create user record
     const now = admin.firestore.Timestamp.now();
     await admin.firestore().collection('authorizedUsers').doc(inviteeEmail.toLowerCase()).set({
@@ -60,35 +102,19 @@ exports.sendInvite = functions.https.onCall(async (data, context) => {
       updatedAt: now,
     });
 
-    // Return email content for manual sending
-    const roleText = role === 'admin' ? 'Administrator' : 'Regular User';
-    const emailContent = {
-      to: inviteeEmail,
-      subject: 'You\'re invited to join Crate Tracker!',
-      html: '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">' +
-            '<h2>Welcome to Crate Tracker!</h2>' +
-            '<p>You\'ve been invited by <strong>' + callerData.email + '</strong> to join Crate Tracker.</p>' +
-            '<p>Crate Tracker is a tool for tracking your game progress and patterns.</p>' +
-            '<p><strong>Your role:</strong> ' + roleText + '</p>' +
-            '<p>To get started:</p>' +
-            '<ol>' +
-            '<li>Visit <a href="https://crate-tracker.web.app">crate-tracker.web.app</a></li>' +
-            '<li>Sign in with your Gmail account</li>' +
-            '<li>Start tracking your crates!</li>' +
-            '</ol>' +
-            '<p>This invitation gives you full access to the app.</p>' +
-            '</div>',
-      text: 'Welcome to Crate Tracker!\n\n' +
-            'You\'ve been invited by ' + callerData.email + '.\n\n' +
-            'Your role: ' + roleText + '\n\n' +
-            'Visit: https://crate-tracker.web.app'
-    };
-
     return {
       success: true,
-      message: 'User authorized successfully. Copy and send the email manually.',
-      user: { email: inviteeEmail.toLowerCase(), role },
-      emailContent
+      message: 'User authorized successfully. Please send the invitation email manually or integrate with your SMTP service.',
+      user: {
+        email: inviteeEmail.toLowerCase(),
+        role
+      },
+      emailContent: {
+        to: inviteeEmail,
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      }
     };
 
   } catch (error) {
