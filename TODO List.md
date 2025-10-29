@@ -48,11 +48,11 @@
 - [x] Update documentation for external SMTP setup
 
 ## Phase 5: Testing & Production Readiness
-- [ ] Create admin user management tests
-- [ ] Test invite email workflow end-to-end
-- [ ] Validate Gmail-only restriction
-- [ ] Security audit: prevent admin privilege escalation
-- [ ] Deploy Firebase Functions and update client configuration
+- [x] Create admin user management tests
+- [x] Test invite email workflow end-to-end
+- [x] Validate Gmail-only restriction
+- [x] Security audit: prevent admin privilege escalation
+- [x] Deploy Firebase Functions and update client configuration
 
 # Feature 2 - Fast forward
 ## Want to give the user a way to enter in a new number of wins (larger than current), and have the application add that number of crates to the crate history, using its predictive algo so the user can "catch up"
