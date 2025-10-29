@@ -282,14 +282,7 @@ function AppContent() {
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
-      <div className='flex justify-end pl-2 mb-2 gap-4'>
-        <button
-          className='flex py-2 px-3 rounded-lg bg-pink-700 text-white font-semibold text-sm shadow hover:bg-pink-900 transition-colors duration-200'
-          // className='text-sm text-gray-300 hover:text-blue-400 transition-colors duration-200'
-          onClick={() => setShowFastForward(true)}
-        >
-          Fast Forward
-        </button>
+      <div className='flex justify-end pl-2 mb-2'>
         <button
           className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={() => setView('config')}
@@ -331,7 +324,11 @@ function AppContent() {
                 </div>
               }
             >
-              <CrateGrid onCrateSelect={addCrate} onUndo={undoCrate} />
+              <CrateGrid
+                onCrateSelect={addCrate}
+                onUndo={undoCrate}
+                onFastForward={() => setShowFastForward(true)}
+              />
             </ErrorBoundary>
 
             <ErrorBoundary
