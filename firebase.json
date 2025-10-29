@@ -1,7 +1,4 @@
 {
-  "functions": {
-    "source": "functions"
-  },
   "projects": {
     "default": "crate-tracker-38b6e"
   },
