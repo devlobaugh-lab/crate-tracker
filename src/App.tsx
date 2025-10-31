@@ -342,13 +342,15 @@ function AppContent() {
                 <div className='flex justify-between items-center text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
                   <span>Next 10 (predictions)</span>
                   <span className='text-gray-400'>
-                    {nextSpecialCrate.type === 'Not soon'
-                      ? 'No Platinum/Legendary soon'
-                      : nextSpecialCrate.type === 'No data'
+                    {nextSpecialCrate?.type === 'Not sure'
+                      ? '? crates until special'
+                      : nextSpecialCrate?.type === 'No data'
                         ? 'Enter crates to see predictions'
-                        : nextSpecialCrate.count === 1
+                        : nextSpecialCrate?.count === 1
                           ? `The next crate is ${nextSpecialCrate.type}`
-                          : `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`}
+                          : nextSpecialCrate
+                            ? `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`
+                            : 'Enter crates to see predictions'}
                   </span>
                 </div>
                 <SmallRow crates={futureTen} />
