@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { nextPatternValues, getCrateTypesFromValues } from '../utils/patternUtils';
+import { nextPatternValues, getCrateTypesFromValues, findNextSpecialCrateExtended } from '../utils/patternUtils';
 import { MASTER_PATTERN } from '../utils/constants';
 
 /**
@@ -11,11 +11,16 @@ interface PatternData {
   predictions: string[];
   lastTenValues: string[];
   predictionValues: string[];
+  nextSpecialCrate: { count: number; type: string };
 }
 
 export function useCratePattern(allCrates: string[]): PatternData {
   // Memoize pattern predictions to avoid expensive calculations on every render
   const patternData = useMemo((): PatternData => {
+    // Find next special crate (Platinum/Legendary) using extended search
+    const nextSpecialCrate = findNextSpecialCrateExtended(allCrates || [], MASTER_PATTERN) ||
+      { count: 0, type: 'No data' };
+
     if (!allCrates || allCrates.length === 0) {
       return {
         lastTen: [],
@@ -23,6 +28,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
         predictions: [],
         lastTenValues: [],
         predictionValues: [],
+        nextSpecialCrate,
       };
     }
 
@@ -40,6 +46,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
       predictions,
       lastTenValues,
       predictionValues: predictions,
+      nextSpecialCrate,
     };
   }, [allCrates]);
 
