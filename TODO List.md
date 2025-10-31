@@ -1,5 +1,6 @@
 # TODO List - 
 # Features
+ 
 ## Feature 1: Add invite system to unlock the app for people
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
@@ -56,10 +57,10 @@
 
 # Feature 2 - Fast forward
 ## Want to give the user a way to enter in a new number of wins (larger than current), and have the application add that number of crates to the crate history, using its predictive algo so the user can "catch up"
-### Use case: User needs to be able to enter in an updated GP win count too and have GP crates added to history. 
+### Use case: User needs to be able to enter in an updated GP win count too and have GP crates added to history.
 ### Note: This is different than just editing the Total count and GP wins values.
 ### App flow
-- I'm thinking there could be a fast-forward button that would show the number of GP and total wins and would prompt the user for new values for both. 
+- I'm thinking there could be a fast-forward button that would show the number of GP and total wins and would prompt the user for new values for both.
 - It should prompt for GP wins first
 - The app will then add the number of new GP crates (new GP crates - old GP crates)
 - The app will add these new crates to the total wins amount
@@ -75,12 +76,26 @@
 - [x] Handle sync/state updates with setIgnoreRemoteChanges
 - [x] Test edge cases (prediction with '?', large diffs)
 
+## Feature 3: Add number of crates until Platinum/Legend
+### Documentation
+- Objective: Add a text blurb in the header of the "Next 10 crate section" on the far right saying "$x number of crates until $(Platinum | Legend)"
+- Technical Approach: Use the predictor to find the next known Platinum ('P') or Legend ('L') crate in the 10-crate prediction window
+- Edge Cases: Only show blurb when predictions are certain (no '?' ambiguities); hide if no P/L predicted in next 10 crates
+
+### Feature 3 Implementation Plan
+- [x] Create utility function `findNextSpecialCrate()` in `src/utils/patternUtils.ts` to locate first definite P/L in predictions array
+- [x] Extended search to look up to 100 crates ahead to find special crates even when close-range predictions are uncertain
+- [x] Extend `useCratePattern` hook in `src/hooks/useCratePattern.ts` to compute and return next special crate data (always returns { count, type })
+- [x] Update "Next 10 (predictions)" section header in `App.tsx` to display countdown blurb with flex layout (title left, blurb right), handling all cases
+- [x] Verify development server launches without errors and all tests pass (91 passed, 7 skipped)
+- [x] Tested extended search finds special crates (e.g., "BBGBBGB" finds Legendary in 15 crates vs previously null)
+
 # Code Quality Improvements
 ## Code Improvements
 Key issues to make in readability, security, and stability.
 
 ## Code Review Summary
-Completed analysis of the crate-tracker-vite codebase identifying key issues in readability, security, and stability.
+Completed comprehensive analysis of codebase identifying issues in readability, security, and stability:
 
 ## Phase 1: Implement Clean Logging System
 - [x] Create src/utils/logger.ts with conditional development logging
@@ -88,11 +103,13 @@ Completed analysis of the crate-tracker-vite codebase identifying key issues in 
 - [x] Replace console.log/debug calls in AuthContext.tsx with logger calls
 - [x] Replace console.log/debug calls in App.tsx with logger calls
 
-## Phase 2: Refactor Oversized Components
+## Phase 2: Refactor Oversized Components & Documentation
 - [ ] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)
 - [ ] Extract useDebouncedSave hook from AuthContext.tsx (data persistence logic)
 - [ ] Extract useAppState hook from App.tsx (main app state management)
 - [ ] Extract useCrateManagement hook from App.tsx (add/undo crate operations)
+- [ ] Add JSDoc comments to complex functions (saveUserData, authorization logic, etc.)
+- [ ] Document key business logic and edge cases in comments
 
 ## Phase 3: Simplify Sync and Type Management
 - [ ] Create useSyncManager hook to centralize online/offline detection
@@ -107,13 +124,19 @@ Completed analysis of the crate-tracker-vite codebase identifying key issues in 
 - [ ] Install file-saver library to replace direct DOM manipulation in exportUserData
 - [ ] Add proper input sanitization for all user-imported data
 - [ ] Validate Firebase configuration environment variables
+- [ ] Move hardcoded app URLs to environment configuration
+- [ ] Add admin safety: prevent last admin from demoting/deactivating themselves
+- [ ] Add input validation to prevent negative GP wins or total wins in fast forward
 
-## Phase 5: Production Error Reporting
-- [ ] Add Sentry SDK for production error tracking and reporting
+## Phase 5: Enhanced Error Handling & User Feedback
 - [ ] Replace global console overrides with proper Firebase error handler
 - [ ] Implement structured error logging throughout the application
+- [ ] Add toast notification system for user feedback on operations and errors
+- [ ] Integrate toast notifications with error boundaries and async operations
+- [ ] Create custom error aggregator for development debugging (free tier compatible)
 
 ## Phase 6: Testing & Performance
+- [ ] Complete the skipped admin function tests (toggleUserStatus, deleteUser edge cases)
 - [ ] Write integration tests for offline sync scenarios and queue management
 - [ ] Add performance tests for debounced save operations
 - [ ] Implement React.memo and useMemo optimizations for expensive operations

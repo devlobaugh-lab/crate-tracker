@@ -194,7 +194,7 @@ function AppContent() {
   }, [state, saveUserData, currentUser, isOnline, syncStatus]);
 
   // Use pattern hook after state is defined
-  const { lastTen, futureTen } = useCratePattern(state?.allCrates || []);
+  const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(state?.allCrates || []);
 
   // Crate management functions
   function addCrate(crateKey: string): void {
@@ -339,8 +339,18 @@ function AppContent() {
               }
             >
               <section className='mb-2'>
-                <div className='text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
-                  Next 10 (predictions)
+                <div className='flex justify-between items-center text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
+                  <span>Next 10 (predictions)</span>
+                  <span className='text-gray-400'>
+                    {nextSpecialCrate.type === 'Not soon'
+                      ? 'No Platinum/Legendary soon'
+                      : nextSpecialCrate.type === 'No data'
+                      ? 'Enter crates to see predictions'
+                      : nextSpecialCrate.count === 1
+                      ? `The next crate is ${nextSpecialCrate.type}`
+                      : `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`
+                    }
+                  </span>
                 </div>
                 <SmallRow crates={futureTen} />
               </section>
