@@ -165,20 +165,28 @@ export function findNextSpecialCrateExtended(
   // If no match found, can't predict
   if (matches.length === 0) return null;
 
-  // For each matching offset, look ahead to find the next P or L
-  for (const start of matches) {
-    for (let i = validInputs.length; i < validInputs.length + maxLookAhead; i++) {
-      const predictedChar = pattern[(start + i) % pattern.length];
-
-      if (predictedChar === 'P') {
-        return { count: i - validInputs.length + 1, type: 'Platinum' };
-      }
-      if (predictedChar === 'L') {
-        return { count: i - validInputs.length + 1, type: 'Legendary' };
-      }
-    }
+  // Generate extended predictions using same certainty logic as nextPatternValues
+  const extendedPredictions: string[] = [];
+  for (let i = 0; i < maxLookAhead; i++) {
+    const chars = matches.map(start => pattern[(start + validInputs.length + i) % pattern.length]);
+    const allSame = chars.every((c: string) => c === chars[0]);
+    extendedPredictions.push(allSame ? chars[0] : '?');
   }
 
-  // No special crates found in extended search
+  // Find first certain P or L in extended predictions (same logic as findNextSpecialCrate)
+  for (let i = 0; i < extendedPredictions.length; i++) {
+    const prediction = extendedPredictions[i];
+
+    if (prediction === 'P') {
+      return { count: i + 1, type: 'Platinum' };
+    }
+    if (prediction === 'L') {
+      return { count: i + 1, type: 'Legendary' };
+    }
+    // Skip ambiguous predictions
+    if (prediction === '?') continue;
+  }
+
+  // No special crates found with certainty in extended search
   return null;
 }
