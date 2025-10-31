@@ -1,8 +1,11 @@
 # Changelog
+
 ## Ver 1.3.4 - 10/29/2020 - Implement Invite system, user auth and Fast Forward
 - Fast forward allows user to enter number of wins and have system fill in crates based on predictive system
 - user auth restricts the system so that it can only be used by invited (authorized) users
 - added admin role for users and admin screen that allows admin users to manage users add/invite, delete, role change, etc.
+- added small test label above future crate sections that lists the number of crates until you hit a special crate (Platinum/Legend)
+- Fixed issue on fast forward where text fields weren't getting initial focus
 
 ## Ver 1.3.3 - 10/25/2025 - Implement Cleaner Logging System 
 - Created logger utility to abstract log calls and make it easier to use a different logger if wanted

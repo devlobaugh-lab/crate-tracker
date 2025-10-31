@@ -15,7 +15,7 @@ interface PatternData {
   predictions: string[];
   lastTenValues: string[];
   predictionValues: string[];
-  nextSpecialCrate: { count: number; type: string };
+  nextSpecialCrate: { count: number; type: string } | null;
 }
 
 export function useCratePattern(allCrates: string[]): PatternData {
@@ -24,7 +24,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
     // Find next special crate (Platinum/Legendary) using extended search
     const nextSpecialCrate = findNextSpecialCrateExtended(allCrates || [], MASTER_PATTERN) || {
       count: 0,
-      type: 'No data',
+      type: 'Not sure',
     };
 
     if (!allCrates || allCrates.length === 0) {
@@ -34,7 +34,7 @@ export function useCratePattern(allCrates: string[]): PatternData {
         predictions: [],
         lastTenValues: [],
         predictionValues: [],
-        nextSpecialCrate,
+        nextSpecialCrate: { count: 0, type: 'No data' },
       };
     }
 
