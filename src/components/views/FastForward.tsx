@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 /**
  * FastForward modal component for bulk updating wins and filling crate history
@@ -18,6 +18,13 @@ interface PromptState {
 function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwardProps) {
   const [state, setState] = useState<PromptState>({ step: 'gp' });
   const [inputValue, setInputValue] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [state.step]);
 
   function handleNext() {
     const value = Number(inputValue);
@@ -53,6 +60,7 @@ function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwar
             <label className='block mb-4'>
               <div className='text-sm font-semibold mb-2'>Additional GP wins:</div>
               <input
+                ref={inputRef}
                 type='number'
                 className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
                 placeholder='Enter additional GP wins'
@@ -71,6 +79,7 @@ function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwar
             <label className='block mb-4'>
               <div className='text-sm font-semibold mb-2'>New total wins:</div>
               <input
+                ref={inputRef}
                 type='number'
                 className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
                 placeholder='Enter new total wins'
