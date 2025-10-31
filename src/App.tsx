@@ -345,11 +345,10 @@ function AppContent() {
                     {nextSpecialCrate.type === 'Not soon'
                       ? 'No Platinum/Legendary soon'
                       : nextSpecialCrate.type === 'No data'
-                      ? 'Enter crates to see predictions'
-                      : nextSpecialCrate.count === 1
-                      ? `The next crate is ${nextSpecialCrate.type}`
-                      : `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`
-                    }
+                        ? 'Enter crates to see predictions'
+                        : nextSpecialCrate.count === 1
+                          ? `The next crate is ${nextSpecialCrate.type}`
+                          : `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`}
                   </span>
                 </div>
                 <SmallRow crates={futureTen} />

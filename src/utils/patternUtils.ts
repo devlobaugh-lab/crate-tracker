@@ -103,7 +103,9 @@ export function getNextCrateValue(currentCrates: string[], masterPattern: string
  * @param predictions - Array of predicted crate values ('B', 'G', 'P', 'L', 'X', or '?')
  * @returns Object with count (number of crates until next special) and type, or null if none found
  */
-export function findNextSpecialCrate(predictions: string[]): { count: number; type: string } | null {
+export function findNextSpecialCrate(
+  predictions: string[]
+): { count: number; type: string } | null {
   for (let i = 0; i < predictions.length; i++) {
     const prediction = predictions[i];
 
@@ -128,7 +130,10 @@ export function findNextSpecialCrate(predictions: string[]): { count: number; ty
  * @param masterPattern - Master pattern string
  * @returns Object with count and type, or null if none found in extended search
  */
-export function findNextSpecialCrateExtended(userInput: string[], masterPattern: string): { count: number; type: string } | null {
+export function findNextSpecialCrateExtended(
+  userInput: string[],
+  masterPattern: string
+): { count: number; type: string } | null {
   const maxLookAhead = 100; // Look up to 100 crates ahead
 
   // Clean up pattern

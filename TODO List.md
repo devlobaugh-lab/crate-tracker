@@ -1,7 +1,7 @@
 # TODO List - 
 # Features
- 
-## Feature 1: Add invite system to unlock the app for people
+
+# Feature 1: Add invite system to unlock the app for people
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
 ### New Database Schema
@@ -76,7 +76,7 @@
 - [x] Handle sync/state updates with setIgnoreRemoteChanges
 - [x] Test edge cases (prediction with '?', large diffs)
 
-## Feature 3: Add number of crates until Platinum/Legend
+# Feature 3: Add number of crates until Platinum/Legend
 ### Documentation
 - Objective: Add a text blurb in the header of the "Next 10 crate section" on the far right saying "$x number of crates until $(Platinum | Legend)"
 - Technical Approach: Use the predictor to find the next known Platinum ('P') or Legend ('L') crate in the 10-crate prediction window
