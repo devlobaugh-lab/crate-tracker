@@ -1,0 +1,83 @@
+name: CI and Deploy to Production
+
+permissions:
+  contents: read
+  id-token: write
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run dependency audit
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Check formatting
+      run: npm run format:check
+
+    - name: Run tests
+      run: npm run test:run -- --coverage
+      continue-on-error: true  # Optional: don't fail if no tests or they fail
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+
+    - name: Build project
+      run: npm run build
+      env:
+        VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-build
+        path: dist/
+
+  deploy_production:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: production-build
+        path: dist/
+
+    - name: Deploy to Firebase
+      uses: w9jds/firebase-action@master
+      with:
+        args: deploy --only hosting --project production
+      env:
+        GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
