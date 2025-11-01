@@ -1,7 +1,7 @@
 # TODO List - 
 # Features
 
-# Feature 1: Add invite system to unlock the app for people
+# ~~Feature 1: Add invite system to unlock the app for people~~
 *Implementation Plan: Gmail-only, invite-only access with admin controls*
 
 ### New Database Schema
@@ -55,7 +55,7 @@
 - [x] Security audit: prevent admin privilege escalation
 - [x] Deploy Firebase Functions and update client configuration
 
-# Feature 2 - Fast forward
+# ~~Feature 2 - Fast forward~~
 ## Want to give the user a way to enter in a new number of wins (larger than current), and have the application add that number of crates to the crate history, using its predictive algo so the user can "catch up"
 ### Use case: User needs to be able to enter in an updated GP win count too and have GP crates added to history.
 ### Note: This is different than just editing the Total count and GP wins values.
@@ -76,7 +76,7 @@
 - [x] Handle sync/state updates with setIgnoreRemoteChanges
 - [x] Test edge cases (prediction with '?', large diffs)
 
-# Feature 3: Add number of crates until Platinum/Legend
+# ~~Feature 3: Add number of crates until Platinum/Legend~~
 ### Documentation
 - Objective: Add a text blurb in the header of the "Next 10 crate section" on the far right saying "$x number of crates until $(Platinum | Legend)"
 - Technical Approach: Use the predictor to find the next known Platinum ('P') or Legend ('L') crate in the 10-crate prediction window
@@ -97,11 +97,17 @@ Key issues to make in readability, security, and stability.
 ## Code Review Summary
 Completed comprehensive analysis of codebase identifying issues in readability, security, and stability:
 
-## Phase 1: Implement Clean Logging System
+## ~~Phase 1: Implement Clean Logging System~~
 - [x] Create src/utils/logger.ts with conditional development logging
 - [x] Replace all console.log/debug calls in firebase.ts with logger utility
 - [x] Replace console.log/debug calls in AuthContext.tsx with logger calls
 - [x] Replace console.log/debug calls in App.tsx with logger calls
+
+## Phase 1b: Optimize Github workflow - branch strategy and use of Github releases
+- [ ] Research how Github releases work 
+- [ ] Adjust branching strategy accordingly
+- [ ] Adjust CI and auto deploy accordingly
+- [ ] Review github rules and adjust to match flow (e.g. pre-reqs to prod deploy)
 
 ## Phase 2: Refactor Oversized Components & Documentation
 - [ ] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)
