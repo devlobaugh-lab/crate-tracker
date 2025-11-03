@@ -13,7 +13,7 @@ import logger from './utils/logger';
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx';
-import ConnectionStatus from './components/common/ConnectionStatus.tsx';
+// import ConnectionStatus from './components/common/ConnectionStatus.tsx';
 import ConfigView from './components/views/ConfigView.tsx';
 import AdminView from './components/views/AdminView.tsx';
 import IntroView from './components/views/IntroView.tsx';
@@ -42,7 +42,7 @@ function AppContent() {
     setIgnoreRemoteChanges,
     isOnline,
     syncStatus,
-    actionQueue,
+    // actionQueue,
     saveOfflineData,
     clearOfflineData,
     loadOfflineData,
@@ -440,11 +440,11 @@ function AppContent() {
           <span>{currentUser ? '' : 'Sign in to save your data to the cloud'}</span>
           {currentUser && (
             <div className='flex items-center gap-1'>
-              <ConnectionStatus
+              {/* <ConnectionStatus
                 isOnline={isOnline}
                 syncStatus={syncStatus}
                 actionQueue={actionQueue}
-              />
+              /> */}
             </div>
           )}
         </div>
