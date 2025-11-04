@@ -21,7 +21,7 @@ function SmallRow({ crates = [], className = '' }: SmallRowProps) {
       {crates.map((crate: CrateItem, index: number) => (
         <div
           key={index}
-          className={`w-8 h-8 rounded-none shadow-lg border ${crate.color}`}
+          className={`w-8 h-8 rounded shadow-lg  ${crate.color}`}
           title={crate.label}
         />
       ))}

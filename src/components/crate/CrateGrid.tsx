@@ -21,7 +21,7 @@ function CrateGrid({ onCrateSelect, onUndo, onFastForward }: CrateGridProps) {
             className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
             title='Fast forward to add bulk wins'
           >
-            <ForwardIcon className='w-6 h-6' />
+            <ForwardIcon className='w-8 h-8' />
           </button>
           <button
             onClick={onUndo}
