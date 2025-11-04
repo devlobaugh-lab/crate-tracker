@@ -10,102 +10,86 @@ interface FastForwardProps {
   currentTotal: number;
 }
 
-interface PromptState {
-  step: 'gp' | 'total';
-  additionalGP?: number;
-}
-
 function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwardProps) {
-  const [state, setState] = useState<PromptState>({ step: 'gp' });
-  const [inputValue, setInputValue] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [additionalGP, setAdditionalGP] = useState<string>('');
+  const [newTotal, setNewTotal] = useState<string>('');
+  const gpInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (gpInputRef.current) {
+      gpInputRef.current.focus();
     }
-  }, [state.step]);
+  }, []);
 
-  function handleNext() {
-    const value = Number(inputValue);
-    if (isNaN(value)) {
-      alert('Please enter a valid number');
+  function handleSubmit() {
+    const gpValue = Number(additionalGP);
+    const totalValue = Number(newTotal);
+
+    if (isNaN(gpValue) || isNaN(totalValue)) {
+      alert('Please enter valid numbers');
       return;
     }
 
-    if (state.step === 'gp') {
-      if (value < 0) {
-        alert('Additional GP wins must be 0 or more');
-        return;
-      }
-      setState({ step: 'total', additionalGP: value });
-      setInputValue('');
-    } else if (state.step === 'total' && state.additionalGP !== undefined) {
-      if (value < currentTotal + state.additionalGP) {
-        alert(`New total wins must be ${currentTotal + state.additionalGP} or more`);
-        return;
-      }
-      onSubmit(state.additionalGP, value);
+    if (gpValue < 0) {
+      alert('Additional GP wins must be 0 or more');
+      return;
     }
+
+    if (totalValue < currentTotal + gpValue) {
+      alert(`New total wins must be ${currentTotal + gpValue} or more`);
+      return;
+    }
+
+    onSubmit(gpValue, totalValue);
   }
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-      <div className='bg-gray-700 rounded-2xl shadow-lg p-6 max-w-md w-full text-white'>
-        <h2 className='text-xl font-bold mb-4'>Fast Forward</h2>
+    <div className='mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg text-white'>
+      <h2 className='text-xl font-bold mb-4 text-center'>Fast Forward</h2>
 
-        {state.step === 'gp' ? (
-          <>
-            <p className='text-sm mb-4'>Current GP wins: {currentGP}</p>
-            <label className='block mb-4'>
-              <div className='text-sm font-semibold mb-2'>Additional GP wins:</div>
-              <input
-                ref={inputRef}
-                type='number'
-                className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
-                placeholder='Enter additional GP wins'
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleNext()}
-                min={0}
-              />
-            </label>
-          </>
-        ) : (
-          <>
-            <p className='text-sm mb-4'>
-              After adding GP crates, current total wins: {currentTotal + (state.additionalGP || 0)}
-            </p>
-            <label className='block mb-4'>
-              <div className='text-sm font-semibold mb-2'>New total wins:</div>
-              <input
-                ref={inputRef}
-                type='number'
-                className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
-                placeholder='Enter new total wins'
-                value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleNext()}
-                min={currentTotal + (state.additionalGP || 0)}
-              />
-            </label>
-          </>
-        )}
+      <p className='text-sm mb-2'>Current GP wins: {currentGP}</p>
+      <p className='text-sm mb-6'>Current total wins: {currentTotal}</p>
 
-        <div className='flex gap-4'>
-          <button
-            onClick={onCancel}
-            className='flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm hover:bg-gray-700 transition-colors'
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleNext}
-            className='flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors'
-          >
-            Next
-          </button>
-        </div>
+      <label className='block mb-4'>
+        <div className='text-sm font-semibold mb-2'>Additional GP wins:</div>
+        <input
+          ref={gpInputRef}
+          type='number'
+          className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
+          placeholder='Enter additional GP wins'
+          value={additionalGP}
+          onChange={e => setAdditionalGP(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          min={0}
+        />
+      </label>
+
+      <label className='block mb-6'>
+        <div className='text-sm font-semibold mb-2'>New total wins:</div>
+        <input
+          type='number'
+          className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
+          placeholder='Enter new total wins'
+          value={newTotal}
+          onChange={e => setNewTotal(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          min={currentTotal + Number(additionalGP || 0)}
+        />
+      </label>
+
+      <div className='flex gap-4'>
+        <button
+          onClick={onCancel}
+          className='flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm hover:bg-gray-700 transition-colors'
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          className='flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors'
+        >
+          Submit
+        </button>
       </div>
     </div>
   );
