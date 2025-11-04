@@ -389,7 +389,7 @@ function AppContent() {
               onBack={() => setView('main')}
               onAdmin={() => setView('admin')}
               setIgnoreRemoteChanges={setIgnoreRemoteChanges}
-              />
+            />
           </ErrorBoundary>
         )}
 
@@ -401,7 +401,7 @@ function AppContent() {
             currentTotal={state.config.wins}
           />
         )}
-        
+
         {view === 'intro' && (
           <ErrorBoundary
             fallback={
@@ -459,7 +459,6 @@ function AppContent() {
         </div>
         <div>App version {APP_VERSION}</div>
       </footer>
-
     </div>
   );
 }

@@ -45,52 +45,52 @@ function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwar
 
   return (
     <div className='mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg text-white'>
-        <h2 className='text-xl font-bold mb-4 text-center'>Fast Forward</h2>
+      <h2 className='text-xl font-bold mb-4 text-center'>Fast Forward</h2>
 
-        <p className='text-sm mb-2'>Current GP wins: {currentGP}</p>
-        <p className='text-sm mb-6'>Current total wins: {currentTotal}</p>
+      <p className='text-sm mb-2'>Current GP wins: {currentGP}</p>
+      <p className='text-sm mb-6'>Current total wins: {currentTotal}</p>
 
-        <label className='block mb-4'>
-          <div className='text-sm font-semibold mb-2'>Additional GP wins:</div>
-          <input
-            ref={gpInputRef}
-            type='number'
-            className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
-            placeholder='Enter additional GP wins'
-            value={additionalGP}
-            onChange={e => setAdditionalGP(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            min={0}
-          />
-        </label>
+      <label className='block mb-4'>
+        <div className='text-sm font-semibold mb-2'>Additional GP wins:</div>
+        <input
+          ref={gpInputRef}
+          type='number'
+          className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
+          placeholder='Enter additional GP wins'
+          value={additionalGP}
+          onChange={e => setAdditionalGP(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          min={0}
+        />
+      </label>
 
-        <label className='block mb-6'>
-          <div className='text-sm font-semibold mb-2'>New total wins:</div>
-          <input
-            type='number'
-            className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
-            placeholder='Enter new total wins'
-            value={newTotal}
-            onChange={e => setNewTotal(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-            min={currentTotal + Number(additionalGP || 0)}
-          />
-        </label>
+      <label className='block mb-6'>
+        <div className='text-sm font-semibold mb-2'>New total wins:</div>
+        <input
+          type='number'
+          className='w-full py-2 px-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400'
+          placeholder='Enter new total wins'
+          value={newTotal}
+          onChange={e => setNewTotal(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          min={currentTotal + Number(additionalGP || 0)}
+        />
+      </label>
 
-        <div className='flex gap-4'>
-          <button
-            onClick={onCancel}
-            className='flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm hover:bg-gray-700 transition-colors'
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className='flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors'
-          >
-            Submit
-          </button>
-        </div>
+      <div className='flex gap-4'>
+        <button
+          onClick={onCancel}
+          className='flex-1 py-2 px-3 rounded-lg border border-gray-500 bg-gray-600 text-gray-300 font-semibold text-sm hover:bg-gray-700 transition-colors'
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          className='flex-1 py-2 px-3 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors'
+        >
+          Submit
+        </button>
+      </div>
     </div>
   );
 }
