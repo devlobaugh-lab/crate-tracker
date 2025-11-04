@@ -282,7 +282,7 @@ function AppContent() {
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
-      <div className='flex justify-end pl-2 mb-2'>
+      <div className='flex justify-end pl-2 mt-1 mb-2'>
         <button
           className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={() => setView('config')}
@@ -300,7 +300,7 @@ function AppContent() {
           </div>
         }
       >
-        {view === 'main' && (
+        {view === 'main' && !showFastForward && (
           <main>
             <ErrorBoundary
               fallback={
@@ -389,10 +389,19 @@ function AppContent() {
               onBack={() => setView('main')}
               onAdmin={() => setView('admin')}
               setIgnoreRemoteChanges={setIgnoreRemoteChanges}
-            />
+              />
           </ErrorBoundary>
         )}
 
+        {showFastForward && (
+          <FastForward
+            onSubmit={fastForwardSubmit}
+            onCancel={() => setShowFastForward(false)}
+            currentGP={state.config.gpWins}
+            currentTotal={state.config.wins}
+          />
+        )}
+        
         {view === 'intro' && (
           <ErrorBoundary
             fallback={
@@ -451,14 +460,6 @@ function AppContent() {
         <div>App version {APP_VERSION}</div>
       </footer>
 
-      {showFastForward && (
-        <FastForward
-          onSubmit={fastForwardSubmit}
-          onCancel={() => setShowFastForward(false)}
-          currentGP={state.config.gpWins}
-          currentTotal={state.config.wins}
-        />
-      )}
     </div>
   );
 }
