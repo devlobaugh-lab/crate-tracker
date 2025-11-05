@@ -54,7 +54,9 @@ function FastForward({ onSubmit, onCancel, currentGP, currentTotal }: FastForwar
           Back
         </button>
       </div>
-      <p className='text-sm font-semibold text-green-300 mb-1'>Current total wins: {currentTotal}</p>
+      <p className='text-sm font-semibold text-green-300 mb-1'>
+        Current total wins: {currentTotal}
+      </p>
       <p className='text-sm font-semibold text-blue-300 mb-4'>Current GP wins: {currentGP}</p>
 
       <label className='block mb-4'>
