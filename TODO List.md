@@ -103,11 +103,11 @@ Completed comprehensive analysis of codebase identifying issues in readability, 
 - [x] Replace console.log/debug calls in AuthContext.tsx with logger calls
 - [x] Replace console.log/debug calls in App.tsx with logger calls
 
-## Phase 1b: Optimize Github workflow - branch strategy and use of Github releases
-- [ ] Research how Github releases work 
-- [ ] Adjust branching strategy accordingly
-- [ ] Adjust CI and auto deploy accordingly
-- [ ] Review github rules and adjust to match flow (e.g. pre-reqs to prod deploy)
+## ~~Phase 1b: Optimize Github workflow - branch strategy and use of Github releases~~
+- [x] Research how Github releases work 
+- [x] Adjust branching strategy accordingly
+- [x] Adjust CI and auto deploy accordingly
+- [x] Review github rules and adjust to match flow (e.g. pre-reqs to prod deploy)
 
 ## Phase 2: Refactor Oversized Components & Documentation
 - [ ] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)

@@ -1,5 +1,15 @@
 # Changelog
 
+## Ver 1.3.5 - Various changes
+- **Enhanced Fast Forward UI**: Single-dialog design with improved styling, focus management, and Enter key support
+- **Connection Status Removal**: Removed connection status indicators from UI for cleaner experience
+- **Advanced Error Boundary System**: Specialized AuthErrorBoundary and FirebaseErrorBoundary, error reporting infrastructure, recovery mechanisms, and development debugging tools
+- **Sophisticated Offline/Sync Management**: Intelligent localStorage persistence, advanced sync status management, debounced save system, automatic offline detection, and action queue processing
+- **GitHub Workflow Optimizations**: Eliminated redundant CI calls and streamlined deployment pipeline
+- **Code Quality & Developer Experience**: Prettier integration, enhanced ESLint configuration, TypeScript strict mode, comprehensive testing setup, and CI pipeline
+- **Modular Architecture Refinements**: Custom hooks for reusable logic, component composition improvements, error boundary integration, and type-safe interfaces
+- **Enhanced User Experience**: Intro view for new users, improved navigation, responsive design, and accessibility improvements
+
 ## Ver 1.3.4 - 10/29/2020 - Implement Invite system, user auth and Fast Forward
 - Fast forward allows user to enter number of wins and have system fill in crates based on predictive system
 - user auth restricts the system so that it can only be used by invited (authorized) users
