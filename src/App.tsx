@@ -52,6 +52,9 @@ function AppContent() {
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
+  // Ref for focus management when returning to main page
+  const mainHeaderRef = useRef<HTMLDivElement>(null);
+
   const [state, setState] = useState<AppState>(() => {
     logger.log('🚀 App initializing - checking data sources');
     logger.log(
@@ -271,9 +274,34 @@ function AppContent() {
     return <Login />;
   }
 
+  // Focus management functions
+  const focusMainHeader = () => {
+    if (mainHeaderRef.current) {
+      mainHeaderRef.current.focus();
+      // Scroll to top as well for better UX
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleBackToMain = () => {
+    setView('main');
+    // Use setTimeout to ensure the view has changed before focusing
+    setTimeout(focusMainHeader, 0);
+  };
+
+  const handleFastForwardCancel = () => {
+    setShowFastForward(false);
+    // Use setTimeout to ensure the modal has closed before focusing
+    setTimeout(focusMainHeader, 0);
+  };
+
   return (
     <div className='min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col'>
-      <header className='flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4'>
+      <header
+        ref={mainHeaderRef}
+        className='flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4'
+        tabIndex={-1}
+      >
         <h1 className='text-2xl font-bold text-white tracking-wide'>Crate Tracker</h1>
         <div className='flex items-center gap-4'>
           <div className='text-sm text-gray-200 font-semibold'>
@@ -386,7 +414,7 @@ function AppContent() {
                 // Use longer timeout for config operations too
                 setIgnoreWithTimeout(5000);
               }}
-              onBack={() => setView('main')}
+              onBack={handleBackToMain}
               onAdmin={() => !showFastForward && setView('admin')}
               setIgnoreRemoteChanges={setIgnoreRemoteChanges}
             />
@@ -396,7 +424,7 @@ function AppContent() {
         {showFastForward && (
           <FastForward
             onSubmit={fastForwardSubmit}
-            onCancel={() => setShowFastForward(false)}
+            onCancel={handleFastForwardCancel}
             currentGP={state.config.gpWins}
             currentTotal={state.config.wins}
           />
@@ -412,7 +440,7 @@ function AppContent() {
               </div>
             }
           >
-            <IntroView onBack={() => setView('main')} />
+            <IntroView onBack={handleBackToMain} />
           </ErrorBoundary>
         )}
 
