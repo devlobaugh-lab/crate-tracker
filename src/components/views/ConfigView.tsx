@@ -127,26 +127,26 @@ function ConfigView({
       </div>
 
       <label className='block mb-4'>
-        <div className='text-xs text-gray-300 font-semibold'>Number of wins</div>
+        <div className='text-sm text-white font-semibold'>Number of wins:</div>
         <input
           type='number'
           value={local.wins}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             setLocal({ ...local, wins: Number(e.target.value) })
           }
-          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-600 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
         />
       </label>
 
       <label className='block mb-4'>
-        <div className='text-xs text-gray-300 font-semibold'>GP wins</div>
+        <div className='text-sm text-white font-semibold'>GP wins:</div>
         <input
           type='number'
           value={local.gpWins}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             setLocal({ ...local, gpWins: Number(e.target.value) })
           }
-          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-600 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
         />
       </label>
 
@@ -166,31 +166,31 @@ function ConfigView({
       </div>
 
       <div className='mt-6'>
-        <div className='text-sm text-gray-300 mb-3 font-semibold text-center'>Data Management</div>
+        <div className='text-sm text-white mb-3 font-semibold text-center'>Data Management</div>
         <div className='grid grid-cols-2 gap-3 mb-2'>
           <button
             onClick={handleExport}
-            className='py-2 px-3 rounded-lg bg-green-600 text-white font-semibold text-sm shadow hover:bg-green-700 transition-colors duration-200'
+            className='py-2 px-3 rounded-lg bg-green-700 text-white font-semibold text-sm shadow hover:bg-green-800 transition-colors duration-200'
           >
             Export Data
           </button>
-          <label className='py-2 px-3 rounded-lg bg-purple-600 text-white font-semibold text-sm shadow hover:bg-purple-700 transition-colors duration-200 cursor-pointer text-center'>
+          <label className='py-2 px-3 rounded-lg bg-purple-700 text-white font-semibold text-sm shadow hover:bg-purple-800 transition-colors duration-200 cursor-pointer text-center'>
             Import Data
             <input type='file' accept='.json' onChange={handleImport} className='hidden' />
           </label>
           <button
             onClick={() => reset()}
-            className='py-2 px-3 col-span-full rounded-lg bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors duration-200'
+            className='py-2 px-3 col-span-full rounded-lg bg-red-700 text-white text-sm font-semibold shadow hover:bg-red-800 transition-colors duration-200'
           >
             Reset All Values
           </button>
         </div>
         {importStatus && (
           <div
-            className={`text-sm p-2 rounded-lg text-center ${
+            className={`text-sm mt-3 py-2 px-3 font-semibold rounded-lg text-center ${
               importStatus.includes('failed') || importStatus.includes('Failed')
-                ? 'bg-red-600 text-white'
-                : 'bg-green-600 text-white'
+                ? 'bg-red-700 text-white'
+                : 'bg-green-700 text-white'
             }`}
           >
             {importStatus}
@@ -199,10 +199,10 @@ function ConfigView({
       </div>
 
       {currentUser?.role === 'admin' && (
-        <div className='mt-6 pt-4 border-t border-gray-600'>
+        <div className='mt-4 pt-4 border-t border-gray-500'>
           <button
             onClick={onAdmin}
-            className='w-full py-2 px-4 rounded-lg bg-yellow-700 text-white font-semibold text-sm shadow hover:bg-yellow-900 transition-colors duration-200'
+            className='w-full py-2 px-4 rounded-lg bg-blue-700 text-white font-semibold text-sm shadow hover:bg-blue-900 transition-colors duration-200'
           >
             User Administration
           </button>

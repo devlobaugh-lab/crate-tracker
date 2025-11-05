@@ -129,10 +129,10 @@ Completed comprehensive analysis of codebase identifying issues in readability, 
 - [ ] Install and implement Zod schema validation for user data import/export
 - [ ] Install file-saver library to replace direct DOM manipulation in exportUserData
 - [ ] Add proper input sanitization for all user-imported data
-- [ ] Validate Firebase configuration environment variables
-- [ ] Move hardcoded app URLs to environment configuration
+- [x] Validate Firebase configuration environment variables
+- [x] Move hardcoded app URLs to environment configuration
 - [ ] Add admin safety: prevent last admin from demoting/deactivating themselves
-- [ ] Add input validation to prevent negative GP wins or total wins in fast forward
+- [x] Add input validation to prevent negative GP wins or total wins in fast forward
 
 ## Phase 5: Enhanced Error Handling & User Feedback
 - [ ] Replace global console overrides with proper Firebase error handler
