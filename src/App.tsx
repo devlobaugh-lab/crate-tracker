@@ -310,7 +310,7 @@ function AppContent() {
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
         </div>
       </header>
-      <div className='flex justify-end pl-2 mt-1 mb-2'>
+      <div className='flex justify-end pr-2 mb-2 mt-1'>
         <button
           className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
           onClick={() => !showFastForward && setView('config')}
@@ -467,7 +467,7 @@ function AppContent() {
           </div>
         }
       >
-        <div className='mt-6 mb-4'>
+        <div className='mt-6 mb-2'>
           <UserProfile />
         </div>
       </ErrorBoundary>
