@@ -327,7 +327,7 @@ function AppContent() {
               <CrateGrid
                 onCrateSelect={addCrate}
                 onUndo={undoCrate}
-                onFastForward={() => setShowFastForward(true)}
+                onFastForward={() => view === 'main' && setShowFastForward(true)}
               />
             </ErrorBoundary>
 
