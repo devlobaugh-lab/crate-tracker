@@ -285,7 +285,7 @@ function AppContent() {
       <div className='flex justify-end pl-2 mt-1 mb-2'>
         <button
           className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
-          onClick={() => setView('config')}
+          onClick={() => !showFastForward && setView('config')}
         >
           <Cog6ToothIcon className='w-5 h-5' />
         </button>
@@ -327,7 +327,7 @@ function AppContent() {
               <CrateGrid
                 onCrateSelect={addCrate}
                 onUndo={undoCrate}
-                onFastForward={() => setShowFastForward(true)}
+                onFastForward={() => view === 'main' && setShowFastForward(true)}
               />
             </ErrorBoundary>
 
@@ -387,7 +387,7 @@ function AppContent() {
                 setIgnoreWithTimeout(5000);
               }}
               onBack={() => setView('main')}
-              onAdmin={() => setView('admin')}
+              onAdmin={() => !showFastForward && setView('admin')}
               setIgnoreRemoteChanges={setIgnoreRemoteChanges}
             />
           </ErrorBoundary>
