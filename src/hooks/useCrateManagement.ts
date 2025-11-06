@@ -88,12 +88,41 @@ export function useCrateManagement({
   }, [state, setState]);
 
   /**
-   * Performs a bulk fast-forward operation, adding multiple crates at once.
-   * Adds GP crates first, then uses the prediction algorithm to fill remaining wins.
-   * Temporarily ignores remote changes to prevent sync conflicts during bulk operations.
+   * Fast-Forward Bulk Operation Algorithm
    *
-   * @param additionalGP - Number of additional GP wins to add
-   * @param newTotal - Target total win count
+   * Business Logic:
+   * - Allows users to "catch up" by bulk-adding crates to match their current win counts
+   * - Preserves GP win accuracy by adding GP crates first
+   * - Uses prediction algorithm for remaining wins to maintain pattern consistency
+   * - Temporarily disables real-time sync to prevent conflicts during bulk operations
+   *
+   * Algorithm Steps:
+   * 1. Calculate GP difference: additionalGP parameter
+   * 2. Calculate total difference: newTotal - (currentTotal + additionalGP)
+   * 3. Add GP crates ('X') to history first, incrementing both GP and total win counters
+   * 4. Add remaining wins using prediction algorithm with MASTER_PATTERN
+   * 5. Update state with complete new crate history and win counts
+   * 6. Ignore remote changes for 10 seconds to allow bulk operation to complete
+   *
+   * Use Cases:
+   * - User has been playing but forgot to track crates in the app
+   * - Importing data from external tracking sources
+   * - Correcting win count discrepancies
+   *
+   * Edge Cases:
+   * - additionalGP = 0: Only uses prediction algorithm for all wins
+   * - newTotal <= currentTotal: No operation performed (validated in UI)
+   * - Prediction algorithm returns '?': Uses fallback crate value
+   * - Network conflicts: Temporarily ignored during operation
+   *
+   * Performance Considerations:
+   * - Bulk operations can add hundreds of crates at once
+   * - Prediction algorithm called for each remaining win
+   * - State update triggers debounced save to Firestore
+   * - Real-time sync disabled during operation to prevent conflicts
+   *
+   * @param additionalGP - Number of additional GP wins to add to current GP count
+   * @param newTotal - Target total win count to reach
    */
   const fastForwardSubmit = useCallback(
     (additionalGP: number, newTotal: number) => {

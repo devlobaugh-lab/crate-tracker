@@ -27,6 +27,39 @@ import { APP_VERSION } from './utils/constants.ts';
 
 // AppContent component that contains the main app logic
 function AppContent() {
+  /**
+   * Main Application Component Logic
+   *
+   * Business Logic Overview:
+   * - Manages application state using custom hooks (useAppState, useCrateManagement)
+   * - Handles view navigation between intro/main/config/admin screens
+   * - Provides crate tracking functionality with prediction algorithm
+   * - Manages user authorization and authentication flow
+   *
+   * State Management Strategy:
+   * - App state centralized in useAppState hook with offline/online sync
+   * - Crate operations handled by useCrateManagement hook
+   * - View state managed locally for UI navigation
+   * - Authorization status determines available features
+   *
+   * Key Features:
+   * - Real-time crate tracking with win counting
+   * - Prediction algorithm for next crate outcomes
+   * - Fast-forward bulk operations for catch-up scenarios
+   * - Offline persistence with automatic sync
+   * - Admin panel for user management (role-based)
+   *
+   * View Logic:
+   * - Intro view: Shown for new users with no crate history
+   * - Main view: Primary crate tracking interface
+   * - Config view: Settings and data management
+   * - Admin view: User administration (admin users only)
+   *
+   * Error Handling:
+   * - Component-level error boundaries for graceful degradation
+   * - Authorization checks prevent unauthorized access
+   * - Network error handling with offline fallbacks
+   */
   const {
     currentUser,
     userData,

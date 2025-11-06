@@ -117,7 +117,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Load user data from Firestore
+  /**
+   * Loads user data from Firestore with fallback to default state.
+   * Creates a new user document if one doesn't exist.
+   *
+   * Business Logic:
+   * - First checks if user document exists in Firestore
+   * - If exists, returns the stored data
+   * - If not exists, creates default user data and saves it
+   * - Handles network/quota errors gracefully by returning default data
+   * - Logs all operations for debugging
+   *
+   * Edge Cases:
+   * - Network errors: Returns default data without failing
+   * - Quota exceeded: Logs error and returns default data
+   * - Document creation failure: Continues with default data
+   * - Invalid data structure: Handled by Firestore type safety
+   *
+   * @param userId - The Firebase user ID to load data for
+   * @returns Promise resolving to user application state
+   */
   async function loadUserData(userId: string): Promise<AppState> {
     logger.log('📥 Loading user data for:', userId?.substring(0, 8) + '...');
 
@@ -176,7 +195,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await offlineSync.processActionQueue(debouncedSaveUserData);
   }, [offlineSync, debouncedSaveUserData]);
 
-  // Listen for authentication state changes
+  /**
+   * Firebase Authentication State Change Handler
+   *
+   * Business Logic Flow:
+   * 1. User signs in with Firebase Auth (Google OAuth)
+   * 2. Extract user email from Firebase user object
+   * 3. Check if email is authorized using AuthorizationService
+   * 4. If authorized: Load user data, set up real-time sync, enable app features
+   * 5. If unauthorized: Show unauthorized UI, allow sign-out only
+   * 6. If signed out: Clear all user data and reset to initial state
+   *
+   * Authorization Logic:
+   * - Gmail-only access control via authorizedUsers collection
+   * - Role-based permissions (admin vs normal users)
+   * - Graceful fallback for missing email or auth failures
+   *
+   * Edge Cases:
+   * - No email in Firebase user: Treated as unauthorized
+   * - Authorization service failure: Treated as unauthorized
+   * - User data load failure: Uses default empty state
+   * - Network issues during auth: Maintains current state
+   * - Multiple rapid auth changes: Handled by Firebase's internal debouncing
+   *
+   * State Management:
+   * - authorizationStatus: 'checking' | 'authorized' | 'unauthorized'
+   * - currentUser: Full user object with role and authorization status
+   * - userData: Application state loaded from Firestore
+   * - loading: Prevents UI flicker during auth transitions
+   */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       logger.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
@@ -254,7 +301,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // Set up real-time listener for user data changes
+  /**
+   * Real-time Firestore Listener for User Data Changes
+   *
+   * Business Logic:
+   * - Listens for changes to the user's document in Firestore
+   * - Updates local state when remote changes are detected
+   * - Respects ignoreRemoteChanges flag to prevent sync conflicts during bulk operations
+   * - Handles listener errors gracefully without going offline
+   *
+   * Synchronization Strategy:
+   * - Real-time updates ensure multiple devices stay in sync
+   * - ignoreRemoteChanges prevents conflicts during fast-forward operations
+   * - Listener errors are logged but don't trigger offline mode
+   * - Automatic cleanup when user signs out
+   *
+   * Edge Cases:
+   * - Document doesn't exist: Listener waits for creation
+   * - Network errors: Logged but listener remains active
+   * - Permission errors: Logged but don't affect local state
+   * - Rapid state changes: Firebase's internal debouncing prevents excessive updates
+   * - Component unmount: Listener properly cleaned up
+   *
+   * Performance Considerations:
+   * - Listener only active when user is authenticated
+   * - Minimal data transfer (only changed fields)
+   * - Automatic reconnection on network recovery
+   */
   useEffect(() => {
     if (!currentUser) {
       logger.log('⏸️ No current user - skipping real-time listener setup');

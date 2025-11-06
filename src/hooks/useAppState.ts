@@ -38,9 +38,40 @@ interface UseAppStateReturn {
 }
 
 /**
- * Custom hook for managing the main application state with offline/online synchronization.
- * Handles state initialization, Firebase real-time updates, localStorage persistence,
- * and debounced saving to Firestore.
+ * Application State Management Hook
+ *
+ * Business Logic Overview:
+ * - Centralizes all application state management with offline/online synchronization
+ * - Implements intelligent state initialization prioritizing localStorage over Firebase when offline
+ * - Handles real-time Firebase updates with conflict prevention
+ * - Manages debounced saving to prevent excessive Firestore writes
+ * - Provides offline persistence with automatic cleanup
+ *
+ * State Initialization Strategy:
+ * 1. Check if offline (syncStatus === 'error') and user authenticated
+ * 2. If offline: Load from localStorage first (faster, guaranteed available)
+ * 3. If online: Use Firebase userData (authoritative source)
+ * 4. Fallback: Default empty state for new users
+ *
+ * Synchronization Flow:
+ * - Real-time listener updates state when Firebase changes (unless ignored)
+ * - State changes trigger debounced save to Firestore (500ms delay)
+ * - Offline state saved to localStorage immediately
+ * - Online state clears localStorage after successful sync
+ * - ignoreRemoteChanges prevents conflicts during bulk operations
+ *
+ * Edge Cases Handled:
+ * - Offline startup: Prioritizes localStorage for immediate UI responsiveness
+ * - Firebase load failure: Falls back to localStorage or defaults
+ * - Network interruptions: Queues operations for retry
+ * - Bulk operations: Temporarily ignores remote changes
+ * - State conflicts: Firebase real-time updates take precedence when online
+ *
+ * Performance Optimizations:
+ * - Debounced saves reduce Firestore write frequency
+ * - localStorage used for instant offline access
+ * - Minimal re-renders through strategic useEffect dependencies
+ * - Automatic cleanup of offline data after sync
  *
  * @param options - Configuration options including user data, sync status, and persistence functions
  * @returns Object containing state, setter, and initialization status
