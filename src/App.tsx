@@ -10,6 +10,7 @@ import {
   FirebaseErrorBoundary,
 } from './components/common/ErrorBoundary.tsx';
 import logger from './utils/logger';
+import { Toaster } from 'react-hot-toast';
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx';
@@ -347,6 +348,29 @@ function App() {
         <AuthErrorBoundary>
           <AuthProvider>
             <AppContent />
+            <Toaster
+              position='top-right'
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#374151',
+                  color: '#f3f4f6',
+                  border: '1px solid #4b5563',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#f3f4f6',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#f3f4f6',
+                  },
+                },
+              }}
+            />
           </AuthProvider>
         </AuthErrorBoundary>
       </FirebaseErrorBoundary>
