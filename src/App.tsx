@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
@@ -10,6 +10,7 @@ import {
   FirebaseErrorBoundary,
 } from './components/common/ErrorBoundary.tsx';
 import logger from './utils/logger';
+import { Toaster } from 'react-hot-toast';
 
 // Import extracted components and utilities
 import SmallRow from './components/common/SmallRow.tsx';
@@ -21,20 +22,45 @@ import FastForward from './components/views/FastForward.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
 import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts';
-import { APP_VERSION, CRATE_TYPES, MASTER_PATTERN } from './utils/constants.ts';
-import { getNextCrateValue } from './utils/patternUtils';
-
-// Define the state interface
-interface AppState {
-  allCrates: string[];
-  config: {
-    wins: number;
-    gpWins: number;
-  };
-}
+import { useAppState } from './hooks/useAppState.ts';
+import { useCrateManagement } from './hooks/useCrateManagement.ts';
+import { APP_VERSION } from './utils/constants.ts';
 
 // AppContent component that contains the main app logic
 function AppContent() {
+  /**
+   * Main Application Component Logic
+   *
+   * Business Logic Overview:
+   * - Manages application state using custom hooks (useAppState, useCrateManagement)
+   * - Handles view navigation between intro/main/config/admin screens
+   * - Provides crate tracking functionality with prediction algorithm
+   * - Manages user authorization and authentication flow
+   *
+   * State Management Strategy:
+   * - App state centralized in useAppState hook with offline/online sync
+   * - Crate operations handled by useCrateManagement hook
+   * - View state managed locally for UI navigation
+   * - Authorization status determines available features
+   *
+   * Key Features:
+   * - Real-time crate tracking with win counting
+   * - Prediction algorithm for next crate outcomes
+   * - Fast-forward bulk operations for catch-up scenarios
+   * - Offline persistence with automatic sync
+   * - Admin panel for user management (role-based)
+   *
+   * View Logic:
+   * - Intro view: Shown for new users with no crate history
+   * - Main view: Primary crate tracking interface
+   * - Config view: Settings and data management
+   * - Admin view: User administration (admin users only)
+   *
+   * Error Handling:
+   * - Component-level error boundaries for graceful degradation
+   * - Authorization checks prevent unauthorized access
+   * - Network error handling with offline fallbacks
+   */
   const {
     currentUser,
     userData,
@@ -52,218 +78,77 @@ function AppContent() {
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
+  // Use the extracted app state hook
+  const { state, setState } = useAppState({
+    currentUser,
+    userData,
+    isOnline,
+    syncStatus,
+    saveUserData,
+    saveOfflineData,
+    loadOfflineData,
+    clearOfflineData,
+    ignoreRemoteChanges: false, // This will be managed by the hook
+  });
+
   // Ref for focus management when returning to main page
   const mainHeaderRef = useRef<HTMLDivElement>(null);
 
-  const [state, setState] = useState<AppState>(() => {
-    logger.log('🚀 App initializing - checking data sources');
-    logger.log(
-      '🚀 Current context state - isOnline:',
-      isOnline,
-      'syncStatus:',
-      syncStatus,
-      'currentUser:',
-      currentUser?.uid?.substring(0, 8)
-    );
-
-    // Check if we're in offline mode and should prioritize localStorage
-    if (!isOnline && syncStatus === 'error' && currentUser) {
-      logger.log('🔄 App startup in offline mode - prioritizing localStorage');
-
-      try {
-        const key = `crate-tracker-offline-${currentUser.uid}`;
-        logger.log('🔍 Checking localStorage key:', key);
-
-        // Debug: Check all localStorage keys
-        logger.log('🔍 All localStorage keys:', Object.keys(localStorage));
-
-        const savedData = localStorage.getItem(key);
-        logger.log('📦 Raw localStorage data for key:', savedData);
-
-        if (savedData && savedData !== 'null' && savedData !== 'undefined') {
-          const parsedData = JSON.parse(savedData);
-          const { data, timestamp } = parsedData;
-
-          logger.log('✅ Found offline data:');
-          logger.log('  - Timestamp:', timestamp);
-          logger.log('  - Wins:', data.config.wins);
-          logger.log('  - Crates:', data.allCrates.length);
-          logger.log('  - Full data:', data);
-
-          logger.log(
-            '🔄 Initializing with offline data (wins:',
-            data.config.wins,
-            ', crates:',
-            data.allCrates.length,
-            ')'
-          );
-          return data;
-        } else {
-          logger.log('ℹ️ No valid offline data found in localStorage');
-          logger.log('📦 localStorage value was:', savedData);
-        }
-      } catch (error) {
-        logger.error('❌ Failed to load offline data during initialization:', error);
-        logger.error('❌ Error details:', (error as Error).message);
-      }
-    }
-
-    // Use userData if available, otherwise use default empty state
-    if (userData) {
-      logger.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
-      return userData;
-    }
-
-    logger.log('🔄 Initializing with default empty state');
-    return { allCrates: [], config: { wins: 0, gpWins: 0 } };
-  });
-
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Update state when userData changes (from real-time listener)
-  useEffect(() => {
-    // Only update state from Firebase if we're truly online and not in error state
-    if (userData && isOnline && syncStatus === 'synced') {
-      logger.log('📡 Updating state from Firebase real-time data');
-      setState(userData);
-    } else {
-      logger.log('📡 Ignoring Firebase real-time data - not in online synced state');
-    }
-  }, [userData, isOnline, syncStatus]);
-
-  // Save to localStorage when state changes and we're offline
-  useEffect(() => {
-    if (state && currentUser && !isOnline && syncStatus === 'error') {
-      logger.log('💾 Saving offline state to localStorage');
-      logger.log('💾 State data:', state);
-      saveOfflineData(state);
-    }
-  }, [state, currentUser, isOnline, syncStatus, saveOfflineData]);
-
-  // Clear localStorage when successfully synced
-  useEffect(() => {
-    if (isOnline && syncStatus === 'synced' && currentUser) {
-      logger.log('🗑️ Clearing localStorage after successful sync');
-      clearOfflineData();
-    }
-  }, [isOnline, syncStatus, currentUser, clearOfflineData]);
-
-  // Load offline data on app startup if we're offline
-  useEffect(() => {
-    if (currentUser && !isOnline && syncStatus === 'error') {
-      logger.log('🔄 App startup - attempting to load offline data');
-      // Small delay to ensure localStorage functions are available
-      setTimeout(() => {
-        const offlineData = loadOfflineData();
-        if (offlineData) {
-          logger.log('✅ Setting offline data to state');
-          setState(offlineData);
-        } else {
-          logger.log('ℹ️ No offline data found');
-        }
-      }, 100);
-    }
-  }, [currentUser, isOnline, syncStatus, loadOfflineData]);
-
-  // Debounced save state to Firestore to prevent excessive calls
-  useEffect(() => {
-    // Don't save if we're offline due to quota errors
-    if (state && currentUser && isOnline && syncStatus !== 'error') {
-      logger.log('📤 State changed, scheduling save...');
-
-      // Clear any existing timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      // Set new timeout - this ensures saves happen even with rapid clicks
-      const timeout = setTimeout(() => {
-        logger.log('💾 Executing scheduled save');
-        saveUserData(state);
-        saveTimeoutRef.current = null;
-      }, 500); // Debounce saves by 500ms
-
-      saveTimeoutRef.current = timeout;
-    } else if (!isOnline || syncStatus === 'error') {
-      logger.log('⏸️ Skipping scheduled save due to offline/quota error state');
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-    };
-  }, [state, saveUserData, currentUser, isOnline, syncStatus]);
+  // Memoize expensive calculations
+  const allCrates = useMemo(() => state?.allCrates || [], [state?.allCrates]);
 
   // Use pattern hook after state is defined
-  const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(state?.allCrates || []);
+  const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(allCrates);
 
-  // Crate management functions
-  function addCrate(crateKey: string): void {
-    const crateType = CRATE_TYPES.find(t => t.key === crateKey);
-    const crateValue = crateType ? crateType.value : '?';
-    const newAll = [...state.allCrates, crateValue];
-    const newConfig = { ...state.config };
-    newConfig.wins += 1;
-    if (crateKey === 'GP') newConfig.gpWins += 1;
-
-    // Update state immediately - let Firebase handle the sync naturally
-    setState({ ...state, allCrates: newAll, config: newConfig });
-
-    // Don't use setIgnoreRemoteChanges for crate operations
-    // Let Firebase's natural debouncing and sync handle it
-  }
-
-  function undoCrate(): void {
-    if (state.allCrates.length === 0) return; // Nothing to undo
-    const lastCrate = state.allCrates[state.allCrates.length - 1];
-    const newAllCrates = state.allCrates.slice(0, -1);
-    const newConfig = { ...state.config };
-    newConfig.wins -= 1;
-    if (lastCrate === 'X') newConfig.gpWins -= 1;
-
-    // Update state immediately - let Firebase handle the sync naturally
-    setState({ ...state, allCrates: newAllCrates, config: newConfig });
-
-    // Don't use setIgnoreRemoteChanges for crate operations
-    // Let Firebase's natural debouncing and sync handle it
-  }
+  // Use the extracted crate management hook
+  const { addCrate, undoCrate, fastForwardSubmit } = useCrateManagement({
+    state,
+    setState,
+    setIgnoreRemoteChanges,
+  });
 
   const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
-    (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
+    (allCrates.length || 0) == 0 ? 'intro' : 'main'
   );
   const [showFastForward, setShowFastForward] = useState(false);
 
-  // Fast forward submit handler
-  function fastForwardSubmit(additionalGP: number, newTotal: number) {
-    const currentGP = state.config.gpWins;
-
-    const diffGP = additionalGP;
-    const diffTotal = newTotal - (state.config.wins + additionalGP);
-
-    let newAllCrates = [...state.allCrates];
-    const newConfig = { ...state.config, gpWins: currentGP + diffGP };
-
-    // Add GP crates
-    for (let i = 0; i < diffGP; i++) {
-      newAllCrates = [...newAllCrates, 'X'];
-      newConfig.wins += 1;
+  // Memoize the next special crate display text
+  const specialCrateText = useMemo(() => {
+    if (nextSpecialCrate?.type === 'Not sure') {
+      return '? crates until special';
     }
-
-    // Add remaining total wins using predictor
-    for (let i = 0; i < diffTotal; i++) {
-      const next = getNextCrateValue(newAllCrates, MASTER_PATTERN) || '?';
-      newAllCrates = [...newAllCrates, next];
-      newConfig.wins += 1;
+    if (nextSpecialCrate?.type === 'No data') {
+      return 'Enter crates to see predictions';
     }
+    if (nextSpecialCrate?.count === 1) {
+      return `The next crate is ${nextSpecialCrate.type}`;
+    }
+    if (nextSpecialCrate) {
+      return `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`;
+    }
+    return 'Enter crates to see predictions';
+  }, [nextSpecialCrate]);
 
-    setState({ ...state, allCrates: newAllCrates, config: newConfig });
+  // Focus management functions - memoized to prevent unnecessary re-renders
+  const focusMainHeader = useCallback(() => {
+    if (mainHeaderRef.current) {
+      mainHeaderRef.current.focus();
+      // Scroll to top as well for better UX
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  const handleBackToMain = useCallback(() => {
+    setView('main');
+    // Use setTimeout to ensure the view has changed before focusing
+    setTimeout(focusMainHeader, 0);
+  }, [focusMainHeader]);
+
+  const handleFastForwardCancel = useCallback(() => {
     setShowFastForward(false);
-
-    // Ignore remote changes for a longer period due to bulk additions
-    setIgnoreWithTimeout(10000);
-  }
+    // Use setTimeout to ensure the modal has closed before focusing
+    setTimeout(focusMainHeader, 0);
+  }, [focusMainHeader]);
 
   // Handle different authorization states
   if (authorizationStatus === 'unauthorized') {
@@ -273,27 +158,6 @@ function AppContent() {
   if (!currentUser) {
     return <Login />;
   }
-
-  // Focus management functions
-  const focusMainHeader = () => {
-    if (mainHeaderRef.current) {
-      mainHeaderRef.current.focus();
-      // Scroll to top as well for better UX
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleBackToMain = () => {
-    setView('main');
-    // Use setTimeout to ensure the view has changed before focusing
-    setTimeout(focusMainHeader, 0);
-  };
-
-  const handleFastForwardCancel = () => {
-    setShowFastForward(false);
-    // Use setTimeout to ensure the modal has closed before focusing
-    setTimeout(focusMainHeader, 0);
-  };
 
   return (
     <div className='min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col'>
@@ -369,17 +233,7 @@ function AppContent() {
               <section className='mb-2'>
                 <div className='flex justify-between items-center text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
                   <span>Next 10 (predictions)</span>
-                  <span className='text-gray-400'>
-                    {nextSpecialCrate?.type === 'Not sure'
-                      ? '? crates until special'
-                      : nextSpecialCrate?.type === 'No data'
-                        ? 'Enter crates to see predictions'
-                        : nextSpecialCrate?.count === 1
-                          ? `The next crate is ${nextSpecialCrate.type}`
-                          : nextSpecialCrate
-                            ? `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`
-                            : 'Enter crates to see predictions'}
-                  </span>
+                  <span className='text-gray-400'>{specialCrateText}</span>
                 </div>
                 <SmallRow crates={futureTen} />
               </section>
@@ -504,6 +358,29 @@ function App() {
         <AuthErrorBoundary>
           <AuthProvider>
             <AppContent />
+            <Toaster
+              position='top-right'
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#374151',
+                  color: '#f3f4f6',
+                  border: '1px solid #4b5563',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#f3f4f6',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#f3f4f6',
+                  },
+                },
+              }}
+            />
           </AuthProvider>
         </AuthErrorBoundary>
       </FirebaseErrorBoundary>

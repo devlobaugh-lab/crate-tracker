@@ -38,19 +38,28 @@ export interface Crate {
   userId: string;
 }
 
-export interface AuthContextType {
+// Focused interfaces for AuthContextType refactoring
+export interface AuthenticationType {
   currentUser: User | null;
-  login: () => Promise<void>; // Google sign in with redirect doesn't return user immediately
-  register: () => Promise<void>; // Google sign in with redirect doesn't return user immediately
+  login: () => Promise<void>;
+  register: () => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
-  // Extended properties for the app
+  authLoading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  authorizationStatus: 'checking' | 'authorized' | 'unauthorized';
+}
+
+export interface DataManagementType {
   userData: any;
   saveUserData: (data: any) => Promise<boolean>;
   loadUserData: () => any;
   setIgnoreRemoteChanges: (ignore: boolean) => void;
   exportUserData: () => void;
   importUserData: (file: File) => Promise<any>;
+}
+
+export interface SyncManagementType {
   isOnline: boolean;
   syncStatus: 'synced' | 'syncing' | 'pending' | 'error';
   actionQueue: any[];
@@ -59,10 +68,13 @@ export interface AuthContextType {
   saveOfflineData: (data: any) => void;
   loadOfflineData: () => any;
   clearOfflineData: () => void;
-  // Auth specific properties
-  signInWithGoogle: () => Promise<void>;
-  authLoading: boolean;
 }
+
+// Combined interface for backward compatibility
+export interface AuthContextType
+  extends AuthenticationType,
+    DataManagementType,
+    SyncManagementType {}
 
 // Firebase types
 export interface FirebaseConfig {
