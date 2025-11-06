@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
@@ -94,8 +94,11 @@ function AppContent() {
   // Ref for focus management when returning to main page
   const mainHeaderRef = useRef<HTMLDivElement>(null);
 
+  // Memoize expensive calculations
+  const allCrates = useMemo(() => state?.allCrates || [], [state?.allCrates]);
+
   // Use pattern hook after state is defined
-  const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(state?.allCrates || []);
+  const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(allCrates);
 
   // Use the extracted crate management hook
   const { addCrate, undoCrate, fastForwardSubmit } = useCrateManagement({
@@ -105,9 +108,47 @@ function AppContent() {
   });
 
   const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
-    (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
+    (allCrates.length || 0) == 0 ? 'intro' : 'main'
   );
   const [showFastForward, setShowFastForward] = useState(false);
+
+  // Memoize the next special crate display text
+  const specialCrateText = useMemo(() => {
+    if (nextSpecialCrate?.type === 'Not sure') {
+      return '? crates until special';
+    }
+    if (nextSpecialCrate?.type === 'No data') {
+      return 'Enter crates to see predictions';
+    }
+    if (nextSpecialCrate?.count === 1) {
+      return `The next crate is ${nextSpecialCrate.type}`;
+    }
+    if (nextSpecialCrate) {
+      return `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`;
+    }
+    return 'Enter crates to see predictions';
+  }, [nextSpecialCrate]);
+
+  // Focus management functions - memoized to prevent unnecessary re-renders
+  const focusMainHeader = useCallback(() => {
+    if (mainHeaderRef.current) {
+      mainHeaderRef.current.focus();
+      // Scroll to top as well for better UX
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
+
+  const handleBackToMain = useCallback(() => {
+    setView('main');
+    // Use setTimeout to ensure the view has changed before focusing
+    setTimeout(focusMainHeader, 0);
+  }, [focusMainHeader]);
+
+  const handleFastForwardCancel = useCallback(() => {
+    setShowFastForward(false);
+    // Use setTimeout to ensure the modal has closed before focusing
+    setTimeout(focusMainHeader, 0);
+  }, [focusMainHeader]);
 
   // Handle different authorization states
   if (authorizationStatus === 'unauthorized') {
@@ -117,27 +158,6 @@ function AppContent() {
   if (!currentUser) {
     return <Login />;
   }
-
-  // Focus management functions
-  const focusMainHeader = () => {
-    if (mainHeaderRef.current) {
-      mainHeaderRef.current.focus();
-      // Scroll to top as well for better UX
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleBackToMain = () => {
-    setView('main');
-    // Use setTimeout to ensure the view has changed before focusing
-    setTimeout(focusMainHeader, 0);
-  };
-
-  const handleFastForwardCancel = () => {
-    setShowFastForward(false);
-    // Use setTimeout to ensure the modal has closed before focusing
-    setTimeout(focusMainHeader, 0);
-  };
 
   return (
     <div className='min-h-screen bg-gray-900 p-6 max-w-md mx-auto font-sans flex flex-col'>
@@ -214,15 +234,7 @@ function AppContent() {
                 <div className='flex justify-between items-center text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
                   <span>Next 10 (predictions)</span>
                   <span className='text-gray-400'>
-                    {nextSpecialCrate?.type === 'Not sure'
-                      ? '? crates until special'
-                      : nextSpecialCrate?.type === 'No data'
-                        ? 'Enter crates to see predictions'
-                        : nextSpecialCrate?.count === 1
-                          ? `The next crate is ${nextSpecialCrate.type}`
-                          : nextSpecialCrate
-                            ? `${nextSpecialCrate.count} crates until ${nextSpecialCrate.type}`
-                            : 'Enter crates to see predictions'}
+                    {specialCrateText}
                   </span>
                 </div>
                 <SmallRow crates={futureTen} />
