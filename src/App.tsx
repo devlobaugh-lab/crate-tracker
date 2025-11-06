@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
@@ -21,17 +21,9 @@ import FastForward from './components/views/FastForward.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
 import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts';
-import { APP_VERSION, CRATE_TYPES, MASTER_PATTERN } from './utils/constants.ts';
-import { getNextCrateValue } from './utils/patternUtils';
-
-// Define the state interface
-interface AppState {
-  allCrates: string[];
-  config: {
-    wins: number;
-    gpWins: number;
-  };
-}
+import { useAppState } from './hooks/useAppState.ts';
+import { useCrateManagement } from './hooks/useCrateManagement.ts';
+import { APP_VERSION } from './utils/constants.ts';
 
 // AppContent component that contains the main app logic
 function AppContent() {
@@ -52,218 +44,36 @@ function AppContent() {
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
-  // Ref for focus management when returning to main page
-  const mainHeaderRef = useRef<HTMLDivElement>(null);
-
-  const [state, setState] = useState<AppState>(() => {
-    logger.log('🚀 App initializing - checking data sources');
-    logger.log(
-      '🚀 Current context state - isOnline:',
-      isOnline,
-      'syncStatus:',
-      syncStatus,
-      'currentUser:',
-      currentUser?.uid?.substring(0, 8)
-    );
-
-    // Check if we're in offline mode and should prioritize localStorage
-    if (!isOnline && syncStatus === 'error' && currentUser) {
-      logger.log('🔄 App startup in offline mode - prioritizing localStorage');
-
-      try {
-        const key = `crate-tracker-offline-${currentUser.uid}`;
-        logger.log('🔍 Checking localStorage key:', key);
-
-        // Debug: Check all localStorage keys
-        logger.log('🔍 All localStorage keys:', Object.keys(localStorage));
-
-        const savedData = localStorage.getItem(key);
-        logger.log('📦 Raw localStorage data for key:', savedData);
-
-        if (savedData && savedData !== 'null' && savedData !== 'undefined') {
-          const parsedData = JSON.parse(savedData);
-          const { data, timestamp } = parsedData;
-
-          logger.log('✅ Found offline data:');
-          logger.log('  - Timestamp:', timestamp);
-          logger.log('  - Wins:', data.config.wins);
-          logger.log('  - Crates:', data.allCrates.length);
-          logger.log('  - Full data:', data);
-
-          logger.log(
-            '🔄 Initializing with offline data (wins:',
-            data.config.wins,
-            ', crates:',
-            data.allCrates.length,
-            ')'
-          );
-          return data;
-        } else {
-          logger.log('ℹ️ No valid offline data found in localStorage');
-          logger.log('📦 localStorage value was:', savedData);
-        }
-      } catch (error) {
-        logger.error('❌ Failed to load offline data during initialization:', error);
-        logger.error('❌ Error details:', (error as Error).message);
-      }
-    }
-
-    // Use userData if available, otherwise use default empty state
-    if (userData) {
-      logger.log('🔄 Initializing with Firebase data (wins:', userData.config?.wins || 0, ')');
-      return userData;
-    }
-
-    logger.log('🔄 Initializing with default empty state');
-    return { allCrates: [], config: { wins: 0, gpWins: 0 } };
+  // Use the extracted app state hook
+  const { state, setState } = useAppState({
+    currentUser,
+    userData,
+    isOnline,
+    syncStatus,
+    saveUserData,
+    saveOfflineData,
+    loadOfflineData,
+    clearOfflineData,
+    ignoreRemoteChanges: false, // This will be managed by the hook
   });
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Update state when userData changes (from real-time listener)
-  useEffect(() => {
-    // Only update state from Firebase if we're truly online and not in error state
-    if (userData && isOnline && syncStatus === 'synced') {
-      logger.log('📡 Updating state from Firebase real-time data');
-      setState(userData);
-    } else {
-      logger.log('📡 Ignoring Firebase real-time data - not in online synced state');
-    }
-  }, [userData, isOnline, syncStatus]);
-
-  // Save to localStorage when state changes and we're offline
-  useEffect(() => {
-    if (state && currentUser && !isOnline && syncStatus === 'error') {
-      logger.log('💾 Saving offline state to localStorage');
-      logger.log('💾 State data:', state);
-      saveOfflineData(state);
-    }
-  }, [state, currentUser, isOnline, syncStatus, saveOfflineData]);
-
-  // Clear localStorage when successfully synced
-  useEffect(() => {
-    if (isOnline && syncStatus === 'synced' && currentUser) {
-      logger.log('🗑️ Clearing localStorage after successful sync');
-      clearOfflineData();
-    }
-  }, [isOnline, syncStatus, currentUser, clearOfflineData]);
-
-  // Load offline data on app startup if we're offline
-  useEffect(() => {
-    if (currentUser && !isOnline && syncStatus === 'error') {
-      logger.log('🔄 App startup - attempting to load offline data');
-      // Small delay to ensure localStorage functions are available
-      setTimeout(() => {
-        const offlineData = loadOfflineData();
-        if (offlineData) {
-          logger.log('✅ Setting offline data to state');
-          setState(offlineData);
-        } else {
-          logger.log('ℹ️ No offline data found');
-        }
-      }, 100);
-    }
-  }, [currentUser, isOnline, syncStatus, loadOfflineData]);
-
-  // Debounced save state to Firestore to prevent excessive calls
-  useEffect(() => {
-    // Don't save if we're offline due to quota errors
-    if (state && currentUser && isOnline && syncStatus !== 'error') {
-      logger.log('📤 State changed, scheduling save...');
-
-      // Clear any existing timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      // Set new timeout - this ensures saves happen even with rapid clicks
-      const timeout = setTimeout(() => {
-        logger.log('💾 Executing scheduled save');
-        saveUserData(state);
-        saveTimeoutRef.current = null;
-      }, 500); // Debounce saves by 500ms
-
-      saveTimeoutRef.current = timeout;
-    } else if (!isOnline || syncStatus === 'error') {
-      logger.log('⏸️ Skipping scheduled save due to offline/quota error state');
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-    };
-  }, [state, saveUserData, currentUser, isOnline, syncStatus]);
+  // Ref for focus management when returning to main page
+  const mainHeaderRef = useRef<HTMLDivElement>(null);
 
   // Use pattern hook after state is defined
   const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(state?.allCrates || []);
 
-  // Crate management functions
-  function addCrate(crateKey: string): void {
-    const crateType = CRATE_TYPES.find(t => t.key === crateKey);
-    const crateValue = crateType ? crateType.value : '?';
-    const newAll = [...state.allCrates, crateValue];
-    const newConfig = { ...state.config };
-    newConfig.wins += 1;
-    if (crateKey === 'GP') newConfig.gpWins += 1;
-
-    // Update state immediately - let Firebase handle the sync naturally
-    setState({ ...state, allCrates: newAll, config: newConfig });
-
-    // Don't use setIgnoreRemoteChanges for crate operations
-    // Let Firebase's natural debouncing and sync handle it
-  }
-
-  function undoCrate(): void {
-    if (state.allCrates.length === 0) return; // Nothing to undo
-    const lastCrate = state.allCrates[state.allCrates.length - 1];
-    const newAllCrates = state.allCrates.slice(0, -1);
-    const newConfig = { ...state.config };
-    newConfig.wins -= 1;
-    if (lastCrate === 'X') newConfig.gpWins -= 1;
-
-    // Update state immediately - let Firebase handle the sync naturally
-    setState({ ...state, allCrates: newAllCrates, config: newConfig });
-
-    // Don't use setIgnoreRemoteChanges for crate operations
-    // Let Firebase's natural debouncing and sync handle it
-  }
+  // Use the extracted crate management hook
+  const { addCrate, undoCrate, fastForwardSubmit } = useCrateManagement({
+    state,
+    setState,
+    setIgnoreRemoteChanges,
+  });
 
   const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
     (state?.allCrates?.length || 0) == 0 ? 'intro' : 'main'
   );
   const [showFastForward, setShowFastForward] = useState(false);
-
-  // Fast forward submit handler
-  function fastForwardSubmit(additionalGP: number, newTotal: number) {
-    const currentGP = state.config.gpWins;
-
-    const diffGP = additionalGP;
-    const diffTotal = newTotal - (state.config.wins + additionalGP);
-
-    let newAllCrates = [...state.allCrates];
-    const newConfig = { ...state.config, gpWins: currentGP + diffGP };
-
-    // Add GP crates
-    for (let i = 0; i < diffGP; i++) {
-      newAllCrates = [...newAllCrates, 'X'];
-      newConfig.wins += 1;
-    }
-
-    // Add remaining total wins using predictor
-    for (let i = 0; i < diffTotal; i++) {
-      const next = getNextCrateValue(newAllCrates, MASTER_PATTERN) || '?';
-      newAllCrates = [...newAllCrates, next];
-      newConfig.wins += 1;
-    }
-
-    setState({ ...state, allCrates: newAllCrates, config: newConfig });
-    setShowFastForward(false);
-
-    // Ignore remote changes for a longer period due to bulk additions
-    setIgnoreWithTimeout(10000);
-  }
 
   // Handle different authorization states
   if (authorizationStatus === 'unauthorized') {
