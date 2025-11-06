@@ -233,9 +233,7 @@ function AppContent() {
               <section className='mb-2'>
                 <div className='flex justify-between items-center text-xs text-gray-300 mb-2 font-semibold tracking-wide'>
                   <span>Next 10 (predictions)</span>
-                  <span className='text-gray-400'>
-                    {specialCrateText}
-                  </span>
+                  <span className='text-gray-400'>{specialCrateText}</span>
                 </div>
                 <SmallRow crates={futureTen} />
               </section>
