@@ -19,6 +19,7 @@ import {
   safeValidateUserDataExport,
   validateFileUpload,
 } from './utils/validation';
+import { notifications } from './utils/notifications';
 
 // Define the state interface
 interface AppState {
@@ -407,6 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const filename = `crate-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
 
     saveAs(blob, filename);
+    notifications.success('Data exported successfully', { filename });
     logger.log('📁 User data exported successfully:', filename);
   }
 
