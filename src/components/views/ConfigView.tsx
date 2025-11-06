@@ -116,7 +116,7 @@ function ConfigView({
 
   return (
     <div className='bg-gray-700 px-6 py-4 rounded-2xl shadow-lg'>
-      <div className='flex items-center justify-between mb-4'>
+      <div className='flex items-center justify-between mb-2'>
         <h2 className='text-xl font-bold text-white tracking-wide'>Config</h2>
         <button
           className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
@@ -125,7 +125,7 @@ function ConfigView({
           Back
         </button>
       </div>
-
+<div className='text-gray-300 text-sm font-semibold text-center mb-2 px-6 py-2'>Verify your crates are correct on the main page before adjusting these values.</div>
       <label className='block mb-4'>
         <div className='text-sm text-white font-semibold'>Number of wins:</div>
         <input
