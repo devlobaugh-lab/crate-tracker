@@ -319,7 +319,32 @@ export function useOfflineSync({
     }
   }, [syncStatus, actionQueue.length, isOnline]);
 
-  // Smart quota reset detection (hourly at 2 minutes past the hour)
+  /**
+   * Firebase Quota Reset Detection System
+   *
+   * Business Logic:
+   * - Monitors Firebase quota limits and automatically attempts recovery
+   * - Runs hourly checks at 2 minutes past each hour (when quotas typically reset)
+   * - Tests quota restoration by attempting minimal Firebase operations
+   * - Automatically switches back to online mode when quota is restored
+   *
+   * Algorithm Flow:
+   * 1. Only activates when in offline error state (!isOnline && syncStatus === 'error')
+   * 2. Schedules next check for next hour at :02 (e.g., 1:02, 2:02, 3:02...)
+   * 3. When check time arrives, attempts checkNetworkStatus() test operation
+   * 4. If successful: Switches to online mode, loads offline data, processes queued actions
+   * 5. If failed: Schedules next hourly check and continues offline
+   *
+   * Error Handling:
+   * - Distinguishes between quota errors and other network issues
+   * - Continues retry attempts until quota is actually restored
+   * - Logs all operations for debugging and monitoring
+   *
+   * Performance Considerations:
+   * - Minimal Firebase operations during checks (network status test only)
+   * - Hourly intervals prevent excessive checking while remaining responsive
+   * - Automatic cleanup of timeout when quota restored or component unmounts
+   */
   useEffect(() => {
     // Only run quota reset checks when in offline quota error state
     if (syncStatus === 'error' && !isOnline) {
