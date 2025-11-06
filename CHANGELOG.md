@@ -1,6 +1,7 @@
 # Changelog
 
-## In Progress - refactor to improve quality with focus on readability, security, and stability
+# Ver 1.3.6 - refactor to improve quality with focus on readability, security, and stability
+## Phase 1: Finished in previous version
 ## Phase 2 Summary ✅
 
 __Completed Deliverables:__
