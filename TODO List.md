@@ -125,13 +125,13 @@ Completed comprehensive analysis of codebase identifying issues in readability, 
   - SyncManagementType (online/offline queue management)
 - [x] Simplify firebase.ts by removing global console overrides
 
-## Phase 4: Enhance Security & Input Validation
-- [ ] Install and implement Zod schema validation for user data import/export
-- [ ] Install file-saver library to replace direct DOM manipulation in exportUserData
-- [ ] Add proper input sanitization for all user-imported data
+## ~~Phase 4: Enhance Security & Input Validation~~
+- [x] Install and implement Zod schema validation for user data import/export
+- [x] Install file-saver library to replace direct DOM manipulation in exportUserData
+- [x] Add proper input sanitization for all user-imported data
 - [x] Validate Firebase configuration environment variables
 - [x] Move hardcoded app URLs to environment configuration
-- [ ] Add admin safety: prevent last admin from demoting/deactivating themselves
+- [x] Add admin safety: prevent last admin from demoting/deactivating themselves
 - [x] Add input validation to prevent negative GP wins or total wins in fast forward
 
 ## Phase 5: Enhanced Error Handling & User Feedback

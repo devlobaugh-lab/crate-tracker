@@ -13,6 +13,12 @@ import logger from './utils/logger';
 import AuthorizationService from './utils/authorization';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useDebouncedSave } from './hooks/useDebouncedSave';
+import { saveAs } from 'file-saver';
+import {
+  validateUserDataExport,
+  safeValidateUserDataExport,
+  validateFileUpload,
+} from './utils/validation';
 
 // Define the state interface
 interface AppState {
@@ -383,63 +389,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // localStorage persistence functions defined above with useCallback
 
-  // Export user data to file
+  // Export user data to file using file-saver library
   function exportUserData(): void {
     if (!userData) {
       throw new Error('No user data to export');
     }
 
-    const exportData = {
+    // Validate and structure the export data
+    const exportData = validateUserDataExport({
       allCrates: userData.allCrates,
       config: userData.config,
       exportedAt: new Date().toISOString(),
-    };
+    });
 
+    // Create blob and use file-saver to download
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `crate-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const filename = `crate-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+    saveAs(blob, filename);
+    logger.log('📁 User data exported successfully:', filename);
   }
 
-  // Import user data from file
+  // Import user data from file with validation
   function importUserData(file: File): Promise<AppState> {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const importedData = JSON.parse((e.target as FileReader).result as string);
+      try {
+        // Validate file first
+        const validatedFile = validateFileUpload(file);
 
-          // Validate the imported data structure
-          if (
-            !importedData.allCrates ||
-            !Array.isArray(importedData.allCrates) ||
-            !importedData.config ||
-            typeof importedData.config !== 'object'
-          ) {
-            throw new Error('Invalid file format');
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const rawData = JSON.parse((e.target as FileReader).result as string);
+
+            // Use safe validation to get structured error handling
+            const validationResult = safeValidateUserDataExport(rawData);
+            if (!validationResult.success) {
+              reject(new Error(`Invalid file format: ${validationResult.error}`));
+              return;
+            }
+
+            // Extract the validated data
+            const { allCrates, config } = validationResult.data;
+
+            // Create the merged data structure
+            const mergedData: AppState = {
+              allCrates,
+              config: {
+                wins: config.wins,
+                gpWins: config.gpWins,
+              },
+            };
+
+            logger.log('📁 User data imported successfully:', {
+              crates: allCrates.length,
+              wins: config.wins,
+              gpWins: config.gpWins,
+            });
+
+            resolve(mergedData);
+          } catch (parseError) {
+            reject(new Error('Failed to parse file: ' + (parseError as Error).message));
           }
-
-          // Merge with current data or replace completely
-          const mergedData: AppState = {
-            allCrates: importedData.allCrates,
-            config: {
-              wins: importedData.config.wins || 0,
-              gpWins: importedData.config.gpWins || 0,
-            },
-          };
-
-          resolve(mergedData);
-        } catch (error) {
-          reject(new Error('Failed to parse file: ' + (error as Error).message));
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsText(file);
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsText(validatedFile);
+      } catch (validationError) {
+        reject(validationError);
+      }
     });
   }
 
