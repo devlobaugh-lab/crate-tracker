@@ -83,6 +83,20 @@ function AdminView({ onBack }: AdminViewProps) {
   const handleUpdateRole = async (email: string, newRole: 'admin' | 'normal') => {
     if (!currentUser?.email) return;
 
+    // Safety check: prevent last admin from demoting themselves
+    if (email === currentUser.email && newRole === 'normal') {
+      const adminCount = users.filter(
+        user => user.role === 'admin' && user.status === 'active'
+      ).length;
+      if (adminCount === 1) {
+        showMessage(
+          'error',
+          'Cannot demote the last remaining admin. Please promote another user to admin first.'
+        );
+        return;
+      }
+    }
+
     const result = await AuthorizationService.updateUserRole(email, newRole, currentUser.email);
     if (result.success) {
       showMessage('success', result.message || 'Role updated successfully');
@@ -96,6 +110,21 @@ function AdminView({ onBack }: AdminViewProps) {
     if (!currentUser?.email) return;
 
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+
+    // Safety check: prevent last admin from deactivating themselves
+    if (email === currentUser.email && newStatus === 'inactive') {
+      const adminCount = users.filter(
+        user => user.role === 'admin' && user.status === 'active'
+      ).length;
+      if (adminCount === 1) {
+        showMessage(
+          'error',
+          'Cannot deactivate the last remaining admin. Please promote another user to admin first.'
+        );
+        return;
+      }
+    }
+
     const result = await AuthorizationService.toggleUserStatus(email, newStatus, currentUser.email);
     if (result.success) {
       showMessage(
