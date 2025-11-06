@@ -109,21 +109,21 @@ Completed comprehensive analysis of codebase identifying issues in readability, 
 - [x] Adjust CI and auto deploy accordingly
 - [x] Review github rules and adjust to match flow (e.g. pre-reqs to prod deploy)
 
-## Phase 2: Refactor Oversized Components & Documentation
-- [ ] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)
-- [ ] Extract useDebouncedSave hook from AuthContext.tsx (data persistence logic)
-- [ ] Extract useAppState hook from App.tsx (main app state management)
-- [ ] Extract useCrateManagement hook from App.tsx (add/undo crate operations)
-- [ ] Add JSDoc comments to complex functions (saveUserData, authorization logic, etc.)
-- [ ] Document key business logic and edge cases in comments
+## ~~Phase 2: Refactor Oversized Components & Documentation~~
+- [x] Extract useOfflineSync hook from AuthContext.tsx (offline detection & queue management)
+- [x] Extract useDebouncedSave hook from AuthContext.tsx (data persistence logic)
+- [x] Extract useAppState hook from App.tsx (main app state management)
+- [x] Extract useCrateManagement hook from App.tsx (add/undo crate operations)
+- [x] Add JSDoc comments to complex functions (saveUserData, authorization logic, etc.)
+- [x] Document key business logic and edge cases in comments
 
-## Phase 3: Simplify Sync and Type Management
-- [ ] Create useSyncManager hook to centralize online/offline detection
-- [ ] Refactor AuthContextType into focused interfaces:
+## ~~Phase 3: Simplify Sync and Type Management~~
+- [x] Create useSyncManager hook to centralize online/offline detection
+- [x] Refactor AuthContextType into focused interfaces:
   - AuthenticationType (auth-related methods)
   - DataManagementType (save/load/userData operations)
   - SyncManagementType (online/offline queue management)
-- [ ] Simplify firebase.ts by removing global console overrides
+- [x] Simplify firebase.ts by removing global console overrides
 
 ## Phase 4: Enhance Security & Input Validation
 - [ ] Install and implement Zod schema validation for user data import/export
