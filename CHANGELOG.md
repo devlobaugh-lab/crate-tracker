@@ -1,5 +1,5 @@
 # Changelog
-## Ver 1.3.7 - In progress
+## Ver 1.3.7 - Code quality improvements
 
 ### Resolved Deprecated Packages
 __Deprecated packages identified and updated:__
