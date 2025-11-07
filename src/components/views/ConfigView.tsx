@@ -34,7 +34,9 @@ function ConfigView({
   const [local, setLocal] = useState<LocalConfig>(config || { wins: 0, gpWins: 0 });
   const [importStatus, setImportStatus] = useState<string>('');
 
+  // Update local state when config prop changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocal(config || { wins: 0, gpWins: 0 });
   }, [config]);
 

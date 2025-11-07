@@ -148,6 +148,7 @@ export function useAppState({
     // Only update state from Firebase if we're truly online and not in error state
     if (userData && isOnline && syncStatus === 'synced' && !ignoreRemoteChanges) {
       logger.log('📡 Updating state from Firebase real-time data');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(userData);
     } else if (ignoreRemoteChanges) {
       logger.log('📡 Ignoring Firebase real-time data - remote changes ignored');
