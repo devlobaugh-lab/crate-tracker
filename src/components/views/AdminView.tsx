@@ -51,10 +51,22 @@ function AdminView({ onBack }: AdminViewProps) {
   }, [currentUser?.email, showMessage]);
 
   useEffect(() => {
-    if (currentUser?.email) {
-      loadUsers();
-    }
-  }, [currentUser?.email, loadUsers]);
+    if (!currentUser?.email) return;
+
+    const loadUsersEffect = async () => {
+      setLoading(true);
+      const result = await AuthorizationService.listAuthorizedUsers(currentUser.email);
+      setLoading(false);
+
+      if (result.success && result.users) {
+        setUsers(result.users);
+      } else {
+        showMessage('error', result.message || 'Failed to load users');
+      }
+    };
+
+    loadUsersEffect();
+  }, [currentUser?.email, showMessage]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
