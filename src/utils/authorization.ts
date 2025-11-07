@@ -302,6 +302,20 @@ This invitation was sent automatically.`;
         return { success: false, message: 'Target user not found.' };
       }
 
+      // Prevent demoting the last admin
+      if (newRole === 'normal' && targetEmail.toLowerCase() === adminEmail.toLowerCase()) {
+        // Count current admins
+        const adminList = await this.listAuthorizedUsers(adminEmail);
+        if (adminList.success && adminList.users) {
+          const adminCount = adminList.users.filter(user => user.role === 'admin').length;
+          if (adminCount <= 1) {
+            return { success: false, message: 'Cannot demote the last remaining admin.' };
+          }
+        } else {
+          return { success: false, message: 'Unable to verify admin count. Please try again.' };
+        }
+      }
+
       // Update the user role
       const docRef = doc(db, 'authorizedUsers', targetEmail.toLowerCase());
       await setDoc(docRef, { role: newRole, updatedAt: serverTimestamp() }, { merge: true });
