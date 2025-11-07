@@ -238,9 +238,10 @@ describe('App Integration Tests', () => {
     it('should navigate to config view', async () => {
       // Find settings/cog button - it's the button with the cog icon
       const buttons = screen.getAllByRole('button');
-      const settingsButton = buttons.find(button =>
-        button.querySelector('svg') &&
-        button.querySelector('svg')?.getAttribute('d')?.includes('M9.594')
+      const settingsButton = buttons.find(
+        button =>
+          button.querySelector('svg') &&
+          button.querySelector('svg')?.getAttribute('d')?.includes('M9.594')
       );
 
       if (settingsButton) {
