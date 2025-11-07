@@ -151,6 +151,16 @@ function AppContent() {
     setTimeout(focusMainHeader, 0);
   }, [focusMainHeader]);
 
+  const handleFastForwardSubmit = useCallback(
+    (additionalGP: number, newTotal: number) => {
+      fastForwardSubmit(additionalGP, newTotal);
+      setShowFastForward(false);
+      // Use setTimeout to ensure the modal has closed before focusing
+      setTimeout(focusMainHeader, 0);
+    },
+    [fastForwardSubmit, focusMainHeader]
+  );
+
   // Handle different authorization states
   if (authorizationStatus === 'unauthorized') {
     return <UnauthorizedAccess />;
@@ -278,7 +288,7 @@ function AppContent() {
 
         {showFastForward && (
           <FastForward
-            onSubmit={fastForwardSubmit}
+            onSubmit={handleFastForwardSubmit}
             onCancel={handleFastForwardCancel}
             currentGP={state.config.gpWins}
             currentTotal={state.config.wins}
