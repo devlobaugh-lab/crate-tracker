@@ -1,6 +1,21 @@
 # Changelog
 ## Ver 1.3.7 - In progress
 
+### Resolved Deprecated Packages
+__Deprecated packages identified and updated:__
+
+- __ESLint__: Updated from `8.57.0` → `9.39.1` (major version upgrade)
+- __eslint-config-prettier__: Updated from `^9.1.2` → `^10.1.8`
+- __eslint-plugin-react-hooks__: Updated from `^4.6.2` → `^7.0.1`
+
+__Key changes made:__
+
+1. __Migrated ESLint configuration__ from legacy `.eslintrc.cjs` format to new flat config `eslint.config.js`
+2. __Removed deprecated__ `.eslintignore` file (no longer supported in ESLint 9)
+3. __Updated lint scripts__ to remove `--ext` flags (handled automatically in flat config)
+4. __Fixed configuration issues__ by adding proper globals (`React`, `NodeJS`) and adjusting rules
+5. __Resolved code issues__ including unreachable code in `authorization.ts`
+
 ### Updated tests to address problem tests
 - __AuthContext Test Fixes__:
 
