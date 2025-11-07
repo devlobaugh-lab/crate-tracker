@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
@@ -25,6 +25,7 @@ import { useIgnoreRemoteChanges } from './hooks/useIgnoreRemoteChanges.ts';
 import { useAppState } from './hooks/useAppState.ts';
 import { useCrateManagement } from './hooks/useCrateManagement.ts';
 import { APP_VERSION } from './utils/constants.ts';
+import { initPerformanceMonitoring } from './utils/performance.ts';
 
 // AppContent component that contains the main app logic
 function AppContent() {
@@ -346,6 +347,11 @@ function AppContent() {
 }
 
 function App() {
+  // Initialize performance monitoring
+  React.useEffect(() => {
+    initPerformanceMonitoring();
+  }, []);
+
   return (
     <ErrorBoundary
       showErrorDetails={process.env.NODE_ENV === 'development'}

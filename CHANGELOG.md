@@ -1,4 +1,27 @@
 # Changelog
+## Ver 1.3.7 - In progress
+### Security Fixes 
+- **Firestore Rules**: Restricted the test collection from unrestricted access to authenticated users only
+- **Dependencies**: Removed unused `nodemailer` package from client dependencies  
+- **Admin Protection**: Added validation to prevent the last remaining admin from demoting themselves
+
+### Performance Optimizations 
+- **Listener Cleanup**: Verified Firestore real-time listeners are properly cleaned up on user logout
+- **Performance Monitoring**: Added comprehensive monitoring including:
+  - Core Web Vitals tracking (LCP, FID, CLS)
+  - Long task detection (>50ms)
+  - Memory usage monitoring in development
+  - Navigation timing metrics
+
+### Quality Assurance 
+- **Testing**: Fixed and validated all tests pass (91 passed, 11 skipped)
+- **CI Pipeline**: All checks pass - TypeScript, ESLint, Prettier, tests, and build
+- **Code Quality**: Maintained consistent error handling and security practices
+
+### Key Improvements Made:
+1. **Enhanced Security**: Closed potential security gaps in Firestore access and admin management
+2. **Better Performance Visibility**: Added monitoring to track real user performance metrics
+3. **Maintained Code Quality**: All changes follow existing patterns and pass CI validation
 
 ## Ver 1.3.6 - 11/6/2025 - Code quality improvements with comprehensive testing and error handling
 

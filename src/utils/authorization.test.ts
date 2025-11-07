@@ -435,29 +435,35 @@ describe('AuthorizationService', () => {
       expect(result.message).toContain('Only administrators can delete users');
     });
 
-    it('should prevent admin self-demotion to normal user', async () => {
-      // Note: This test covers the business logic validation, but the current implementation
-      // allows self-demotion. In practice, you might want additional validation to prevent
-      // the last admin from demoting themselves.
+    it('should prevent admin self-demotion to normal user when they are the last admin', async () => {
+      // This test verifies that the last admin cannot demote themselves to prevent
+      // a system lockout scenario where no admins remain.
 
       const mockGetDoc = vi.mocked(getDoc);
-      const mockSetDoc = vi.mocked(setDoc);
+      const mockGetDocs = vi.mocked(getDocs);
 
+      // Mock admin check for updateUserRole - caller is admin
       mockGetDoc.mockResolvedValueOnce(mockAdminDoc as any);
+      // Mock user existence check - target user exists
       mockGetDoc.mockResolvedValueOnce(mockAdminDoc as any);
-      mockSetDoc.mockResolvedValue();
+      // Mock admin check for listAuthorizedUsers - caller is admin
+      mockGetDoc.mockResolvedValueOnce(mockAdminDoc as any);
 
-      // This should succeed as currently implemented - admin can change their own role
+      // Mock listAuthorizedUsers to return only one admin
+      const mockUsers = [{ id: mockAdminEmail.toLowerCase(), data: () => ({ role: 'admin' }) }];
+      mockGetDocs.mockResolvedValue({
+        forEach: (callback: (doc: any) => void) => mockUsers.forEach(callback),
+      } as any);
+
+      // Attempt to demote the last admin should fail
       const result = await AuthorizationService.updateUserRole(
         mockAdminEmail,
         'normal',
         mockAdminEmail
       );
 
-      expect(result.success).toBe(true);
-
-      // In a production system, you might want to add validation to prevent
-      // the last admin from demoting themselves. This is noted for the security audit.
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Cannot demote the last remaining admin');
     });
   });
 });
