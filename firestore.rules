@@ -53,9 +53,9 @@ service cloud.firestore {
       allow create: if isAuthorized() && isAuthenticated() && request.auth.uid == userId;
     }
 
-    // For development/testing purposes, allow some flexibility
+    // For development/testing purposes, restrict to authenticated users only
     match /test/{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
 
     // Default deny rule for any other access
