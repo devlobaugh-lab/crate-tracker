@@ -55,9 +55,6 @@ export class AuthorizationService {
         logger.log(`💡 Make sure the email is lowercase in Firestore: ${userEmail.toLowerCase()}`);
         return { authorized: false };
       }
-
-      logger.log(`❌ Unexpected authorization failure for ${userEmail}`);
-      return { authorized: false };
     } catch (error) {
       logger.error(`❌ Error checking authorization for ${userEmail}:`, error);
       logger.error(`❌ Error details:`, (error as Error).message);
