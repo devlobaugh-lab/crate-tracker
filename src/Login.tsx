@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from './AuthContext.tsx';
 
 function Login() {
-  const { signInWithGoogle, authLoading } = useAuth();
+  const { signInWithGoogle, authLoading, authorizationStatus, currentUser } = useAuth() as any;
   const [error, setError] = useState<string>('');
 
   const handleGoogleSignIn = async (): Promise<void> => {
@@ -15,6 +15,33 @@ function Login() {
     }
   };
 
+  // Show authorization checking state only when there IS a user being checked
+  if (authLoading || (authorizationStatus === 'checking' && currentUser)) {
+    return (
+      <div className='min-h-screen bg-gray-900 flex items-center justify-center p-6'>
+        <div className='max-w-md w-full'>
+          <div className='bg-gray-800 rounded-2xl shadow-lg p-8 text-center'>
+            <div className='w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse'>
+              <svg className='w-8 h-8 text-white' fill='currentColor' viewBox='0 0 24 24'>
+                <path d='M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9ZM19 9H14V4H19V9Z' />
+              </svg>
+            </div>
+            <h2 className='text-xl font-semibold text-white mb-2'>
+              {authLoading ? 'Signing In...' : 'Verifying Access...'}
+            </h2>
+            <p className='text-gray-300 text-sm'>
+              {authLoading ? 'Connecting to Google...' : 'Checking authorization permissions...'}
+            </p>
+            <div className='mt-4'>
+              <div className='w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto'></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default login UI (only shown when not loading and not checking authorization)
   return (
     <div className='min-h-screen bg-gray-900 flex items-center justify-center p-6'>
       <div className='max-w-md w-full'>

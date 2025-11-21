@@ -1,5 +1,8 @@
+import React from 'react';
+
 /**
  * SmallRow component for displaying a row of crate indicators
+ * Memoized to prevent unnecessary re-renders when crate data hasn't changed
  */
 interface CrateItem {
   color: string;
@@ -11,7 +14,7 @@ interface SmallRowProps {
   className?: string;
 }
 
-function SmallRow({ crates = [], className = '' }: SmallRowProps) {
+const SmallRow = React.memo<SmallRowProps>(({ crates = [], className = '' }) => {
   if (crates.length === 0) {
     return <div className={`text-center text-gray-400 italic py-1 ${className}`}>No data</div>;
   }
@@ -21,12 +24,14 @@ function SmallRow({ crates = [], className = '' }: SmallRowProps) {
       {crates.map((crate: CrateItem, index: number) => (
         <div
           key={index}
-          className={`w-8 h-8 rounded-none shadow-lg border ${crate.color}`}
+          className={`w-8 h-8 rounded shadow-lg  ${crate.color}`}
           title={crate.label}
         />
       ))}
     </div>
   );
-}
+});
+
+SmallRow.displayName = 'SmallRow';
 
 export default SmallRow;

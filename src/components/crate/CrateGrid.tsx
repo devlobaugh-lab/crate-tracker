@@ -1,4 +1,4 @@
-import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowUturnLeftIcon, ForwardIcon } from '@heroicons/react/24/outline';
 import { CRATE_TYPES, CrateType } from '../../utils/constants';
 
 /**
@@ -7,20 +7,30 @@ import { CRATE_TYPES, CrateType } from '../../utils/constants';
 interface CrateGridProps {
   onCrateSelect: (crateKey: string) => void;
   onUndo: () => void;
+  onFastForward: () => void;
 }
 
-function CrateGrid({ onCrateSelect, onUndo }: CrateGridProps) {
+function CrateGrid({ onCrateSelect, onUndo, onFastForward }: CrateGridProps) {
   return (
     <section className='mb-4 bg-gray-700 p-6 pb-8 rounded-2xl shadow-lg'>
       <div className='text-sm text-gray-200 mb-4 font-semibold flex justify-between items-center'>
         <div>Choose current crate</div>
-        <button
-          onClick={onUndo}
-          className='text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200'
-          title='Undo last crate'
-        >
-          <ArrowUturnLeftIcon className='w-6 h-6' />
-        </button>
+        <div className='flex gap-2'>
+          <button
+            onClick={onFastForward}
+            className='text-sm underline text-gray-300 hover:text-blue-400 transition-colors duration-200'
+            title='Fast forward to add bulk wins'
+          >
+            <ForwardIcon className='w-7 h-7' />
+          </button>
+          <button
+            onClick={onUndo}
+            className='text-sm underline mr-1 text-gray-300 hover:text-blue-400 transition-colors duration-200'
+            title='Undo last crate'
+          >
+            <ArrowUturnLeftIcon className='w-5 h-5' />
+          </button>
+        </div>
       </div>
       <div className='grid grid-cols-3 gap-4'>
         {CRATE_TYPES.map((crateType: CrateType) => (

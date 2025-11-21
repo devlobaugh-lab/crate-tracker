@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { notifications } from '../../utils/notifications';
 
 interface Props {
   children: ReactNode;
@@ -31,6 +32,13 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Show user-friendly error notification
+    notifications.error(
+      'An unexpected error occurred. Please try refreshing the page.',
+      { error: error.message, componentStack: errorInfo.componentStack },
+      'error-boundary'
+    );
 
     this.setState({
       error,
