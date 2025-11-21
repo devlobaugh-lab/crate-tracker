@@ -4,6 +4,29 @@ export interface User {
   email: string;
   displayName?: string;
   photoURL?: string;
+  role?: 'admin' | 'normal';
+  authorized?: boolean;
+}
+
+// Import Firebase types
+import { Timestamp, FieldValue } from 'firebase/firestore';
+
+// User authorization and management types
+export interface AuthorizedUser {
+  id?: string; // Document ID
+  email: string; // lowercased Gmail address
+  role: 'admin' | 'normal';
+  status: 'active' | 'inactive';
+  invitedBy?: string; // Gmail of inviting admin
+  invitedAt?: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
+}
+
+export interface UserInvitation {
+  email: string;
+  role: 'admin' | 'normal';
+  invitedBy: string; // Admin Gmail address
 }
 
 export interface Crate {
@@ -15,19 +38,28 @@ export interface Crate {
   userId: string;
 }
 
-export interface AuthContextType {
+// Focused interfaces for AuthContextType refactoring
+export interface AuthenticationType {
   currentUser: User | null;
-  login: () => Promise<any>; // Google sign in returns Firebase User
-  register: () => Promise<any>; // Google sign in returns Firebase User
+  login: () => Promise<void>;
+  register: () => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
-  // Extended properties for the app
+  authLoading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  authorizationStatus: 'checking' | 'authorized' | 'unauthorized';
+}
+
+export interface DataManagementType {
   userData: any;
   saveUserData: (data: any) => Promise<boolean>;
   loadUserData: () => any;
   setIgnoreRemoteChanges: (ignore: boolean) => void;
   exportUserData: () => void;
   importUserData: (file: File) => Promise<any>;
+}
+
+export interface SyncManagementType {
   isOnline: boolean;
   syncStatus: 'synced' | 'syncing' | 'pending' | 'error';
   actionQueue: any[];
@@ -36,10 +68,13 @@ export interface AuthContextType {
   saveOfflineData: (data: any) => void;
   loadOfflineData: () => any;
   clearOfflineData: () => void;
-  // Auth specific properties
-  signInWithGoogle: () => Promise<any>;
-  authLoading: boolean;
 }
+
+// Combined interface for backward compatibility
+export interface AuthContextType
+  extends AuthenticationType,
+    DataManagementType,
+    SyncManagementType {}
 
 // Firebase types
 export interface FirebaseConfig {

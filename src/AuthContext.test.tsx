@@ -31,6 +31,7 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn(),
   onSnapshot: vi.fn(() => vi.fn()), // Return unsubscribe function
   getFirestore: vi.fn(() => ({})),
+  serverTimestamp: vi.fn(() => new Date()),
 }));
 
 // Test component that uses the auth context
@@ -83,8 +84,18 @@ describe('AuthContext', () => {
   describe('Authentication', () => {
     it('should handle successful Google sign in', async () => {
       const mockSignInWithPopup = vi.mocked(signInWithPopup);
+      const mockGetDoc = vi.mocked(getDoc);
+      const mockDoc = vi.mocked(doc);
+
       mockSignInWithPopup.mockResolvedValue({
         user: mockFirebaseUser,
+      } as any);
+
+      // Mock authorization check
+      mockDoc.mockReturnValue({ id: 'test-doc' } as any);
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({ email: 'test@example.com', role: 'normal', status: 'active' }),
       } as any);
 
       // Mock onAuthStateChanged to simulate user being signed in
@@ -130,7 +141,17 @@ describe('AuthContext', () => {
 
     it('should handle logout', async () => {
       const mockSignOut = vi.mocked(signOut);
+      const mockGetDoc = vi.mocked(getDoc);
+      const mockDoc = vi.mocked(doc);
+
       mockSignOut.mockResolvedValue();
+
+      // Mock authorization check
+      mockDoc.mockReturnValue({ id: 'test-doc' } as any);
+      mockGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({ email: 'test@example.com', role: 'normal', status: 'active' }),
+      } as any);
 
       // Mock onAuthStateChanged to simulate user being signed in first
       const mockOnAuthStateChanged = vi.mocked(onAuthStateChanged);

@@ -96,3 +96,97 @@ export function getNextCrateValue(currentCrates: string[], masterPattern: string
   const predictions = nextPatternValues(currentCrates, masterPattern);
   return predictions.length > 0 ? predictions[0] : null;
 }
+
+/**
+ * Finds the next known Platinum ('P') or Legendary ('L') crate in predictions
+ * Only looks within the standard 10 prediction window
+ * @param predictions - Array of predicted crate values ('B', 'G', 'P', 'L', 'X', or '?')
+ * @returns Object with count (number of crates until next special) and type, or null if none found
+ */
+export function findNextSpecialCrate(
+  predictions: string[]
+): { count: number; type: string } | null {
+  for (let i = 0; i < predictions.length; i++) {
+    const prediction = predictions[i];
+
+    if (prediction === 'P') {
+      return { count: i + 1, type: 'Platinum' };
+    }
+    if (prediction === 'L') {
+      return { count: i + 1, type: 'Legendary' };
+    }
+    // Skip ambiguous predictions and continue looking
+    if (prediction === '?') continue;
+  }
+
+  // No Platinum or Legend found in predictions
+  return null;
+}
+
+/**
+ * Finds the next known Platinum ('P') or Legendary ('L') crate by looking further ahead
+ * Extends beyond the standard prediction window to find special crates
+ * @param userInput - Current user crate history
+ * @param masterPattern - Master pattern string
+ * @returns Object with count and type, or null if none found in extended search
+ */
+export function findNextSpecialCrateExtended(
+  userInput: string[],
+  masterPattern: string
+): { count: number; type: string } | null {
+  const maxLookAhead = 100; // Look up to 100 crates ahead
+
+  // Clean up pattern
+  const pattern = masterPattern.replace(/\s+/g, '');
+
+  // Filter only valid input values
+  const validInputs = userInput.filter((v: string) => VALID_CRATE_CHARS.includes(v));
+
+  // If no valid inputs, can't predict
+  if (validInputs.length === 0) return null;
+
+  const matches: number[] = [];
+
+  // Try every possible starting position in the pattern
+  for (let start = 0; start < pattern.length; start++) {
+    let fits = true;
+    for (let i = 0; i < validInputs.length; i++) {
+      const expected = pattern[(start + i) % pattern.length];
+      if (validInputs[i] !== expected) {
+        fits = false;
+        break;
+      }
+    }
+    if (fits) {
+      matches.push(start);
+    }
+  }
+
+  // If no match found, can't predict
+  if (matches.length === 0) return null;
+
+  // Generate extended predictions using same certainty logic as nextPatternValues
+  const extendedPredictions: string[] = [];
+  for (let i = 0; i < maxLookAhead; i++) {
+    const chars = matches.map(start => pattern[(start + validInputs.length + i) % pattern.length]);
+    const allSame = chars.every((c: string) => c === chars[0]);
+    extendedPredictions.push(allSame ? chars[0] : '?');
+  }
+
+  // Find first certain P or L in extended predictions (same logic as findNextSpecialCrate)
+  for (let i = 0; i < extendedPredictions.length; i++) {
+    const prediction = extendedPredictions[i];
+
+    if (prediction === 'P') {
+      return { count: i + 1, type: 'Platinum' };
+    }
+    if (prediction === 'L') {
+      return { count: i + 1, type: 'Legendary' };
+    }
+    // Skip ambiguous predictions
+    if (prediction === '?') continue;
+  }
+
+  // No special crates found with certainty in extended search
+  return null;
+}
