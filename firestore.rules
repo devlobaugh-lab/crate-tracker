@@ -34,7 +34,8 @@ service cloud.firestore {
     match /authorizedUsers/{gmailAddress} {
       // Any authenticated user can check if they exist (for authorization logic)
       // Admins can read any user document for management purposes
-      allow read: if isAuthenticated() && (request.auth.token.email.lower() == gmailAddress || isAdmin());
+      allow read: if isAuthenticated();
+
       // Only admins can read all users (for admin panel listing)
       allow list: if isAdmin();
       // Only admins can create/modify/delete other users
