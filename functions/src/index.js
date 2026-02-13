@@ -20,8 +20,10 @@ exports.sendInvite = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'Missing email or role parameter.');
   }
 
-  if (!inviteeEmail.toLowerCase().endsWith('@gmail.com')) {
-    throw new functions.https.HttpsError('invalid-argument', 'Only Gmail addresses are allowed.');
+  // Validate email format (accepts any valid email address)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+  if (!emailRegex.test(inviteeEmail)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid email address format.');
   }
 
   if (role !== 'admin' && role !== 'normal') {
