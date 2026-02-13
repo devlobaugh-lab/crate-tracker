@@ -25,7 +25,6 @@ vi.mock('./logger', () => ({
 describe('AuthorizationService', () => {
   const mockAdminEmail = 'admin@gmail.com';
   const mockNormalUserEmail = 'user@gmail.com';
-  const mockInvalidEmail = 'user@example.com';
   const mockTargetEmail = 'target@gmail.com';
 
   const mockAdminDoc = {
@@ -132,7 +131,7 @@ describe('AuthorizationService', () => {
   });
 
   describe('authorizeUser', () => {
-    it('should successfully authorize a new Gmail user as admin', async () => {
+    it('should successfully authorize a new user as admin', async () => {
       const mockGetDoc = vi.mocked(getDoc);
       const mockSetDoc = vi.mocked(setDoc);
       const mockServerTimestamp = vi.mocked(serverTimestamp);
@@ -154,22 +153,39 @@ describe('AuthorizationService', () => {
       const result = await AuthorizationService.authorizeUser(invitation, mockAdminEmail);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('User authorized successfully');
+      expect(result.message).toContain('User added successfully');
       expect(result.user).toBeDefined();
       expect(result.user?.email).toBe(mockTargetEmail.toLowerCase());
       expect(result.user?.role).toBe('admin');
-      expect(result.emailContent).toBeDefined();
       expect(mockSetDoc).toHaveBeenCalled();
     });
 
-    it('should reject non-Gmail addresses', async () => {
-      const result = await AuthorizationService.authorizeUser(
-        { email: mockInvalidEmail, role: 'normal', invitedBy: mockAdminEmail },
-        mockAdminEmail
-      );
+    it('should successfully authorize any valid email address', async () => {
+      const mockGetDoc = vi.mocked(getDoc);
+      const mockSetDoc = vi.mocked(setDoc);
+      const mockServerTimestamp = vi.mocked(serverTimestamp);
 
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('Only Gmail addresses are allowed');
+      // Admin check - admin exists and is active
+      mockGetDoc.mockResolvedValueOnce(mockAdminDoc as any);
+      // User check - user doesn't exist
+      mockGetDoc.mockResolvedValueOnce(mockNonExistentDoc as any);
+
+      mockSetDoc.mockResolvedValue();
+      mockServerTimestamp.mockReturnValue({ _type: 'serverTimestamp' } as any);
+
+      // Test with non-Gmail address (e.g., company email)
+      const invitation = {
+        email: 'user@company.com',
+        role: 'normal' as const,
+        invitedBy: mockAdminEmail,
+      };
+
+      const result = await AuthorizationService.authorizeUser(invitation, mockAdminEmail);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('User added successfully');
+      expect(result.user).toBeDefined();
+      expect(result.user?.email).toBe('user@company.com');
     });
 
     it('should reject if caller is not admin', async () => {
@@ -362,17 +378,22 @@ describe('AuthorizationService', () => {
   });
 
   describe('isValidGmailAddress', () => {
-    it('should validate correct Gmail addresses', () => {
+    it('should validate any valid email addresses', () => {
+      // Gmail addresses
       expect(AuthorizationService.isValidGmailAddress('user@gmail.com')).toBe(true);
       expect(AuthorizationService.isValidGmailAddress('User.Name+tag@gmail.com')).toBe(true);
       expect(AuthorizationService.isValidGmailAddress('test@GMAIL.COM')).toBe(true);
+      // Other email domains
+      expect(AuthorizationService.isValidGmailAddress('user@yahoo.com')).toBe(true);
+      expect(AuthorizationService.isValidGmailAddress('user@outlook.com')).toBe(true);
+      expect(AuthorizationService.isValidGmailAddress('user@company.com')).toBe(true);
     });
 
     it('should reject invalid email formats', () => {
-      expect(AuthorizationService.isValidGmailAddress('user@yahoo.com')).toBe(false);
-      expect(AuthorizationService.isValidGmailAddress('user@gmail.com.extra')).toBe(false);
       expect(AuthorizationService.isValidGmailAddress('invalid')).toBe(false);
       expect(AuthorizationService.isValidGmailAddress('')).toBe(false);
+      expect(AuthorizationService.isValidGmailAddress('user@')).toBe(false);
+      expect(AuthorizationService.isValidGmailAddress('@domain.com')).toBe(false);
     });
   });
 

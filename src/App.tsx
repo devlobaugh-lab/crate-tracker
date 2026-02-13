@@ -179,7 +179,7 @@ function AppContent() {
       >
         <h1 className='text-2xl font-bold text-white tracking-wide'>Crate Tracker</h1>
         <div className='flex items-center gap-4'>
-          <div className='text-sm text-gray-200 font-semibold'>
+          <div className='text-lg text-gray-200 font-semibold'>
             Wins: {state?.config?.wins || 0}
           </div>
           {/* <ConnectionStatus isOnline={isOnline} syncStatus={syncStatus} actionQueue={actionQueue} /> */}
