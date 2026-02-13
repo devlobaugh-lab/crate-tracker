@@ -77,19 +77,13 @@ export class AuthorizationService {
   }
 
   /**
-   * Invite and authorize a new Gmail user (admin only)
-   * NOTE: Since Firebase Functions have CORS issues in staging, this is now client-side
+   * Invite and authorize a new user (admin only)
    */
   static async authorizeUser(
     invitation: UserInvitation,
     adminEmail: string
-  ): Promise<{ success: boolean; message: string; user?: AuthorizedUser; emailContent?: any }> {
+  ): Promise<{ success: boolean; message: string; user?: AuthorizedUser }> {
     try {
-      // Validate Gmail format client-side
-      if (!invitation.email.toLowerCase().endsWith('@gmail.com')) {
-        return { success: false, message: 'Only Gmail addresses are allowed.' };
-      }
-
       // Check admin permission
       const adminCheck = await this.checkUserAuthorization(adminEmail);
       if (!adminCheck.authorized || adminCheck.role !== 'admin') {
@@ -117,46 +111,12 @@ export class AuthorizationService {
       const docRef = doc(db, 'authorizedUsers', invitation.email.toLowerCase());
       await setDoc(docRef, newUser);
 
-      // Generate email content (same as previewInvitation)
-      // const roleText = invitation.role === 'admin' ? 'Administrator' : 'Regular User';
-      const emailSubject = "You're invited to join Crate Tracker!";
-      const emailHtml = `
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <h2>Welcome to Crate Tracker!</h2>
-  <p>You've been invited to join Crate Tracker.</p>
-  <p>Crate Tracker is a tool for tracking your game progress and patterns.</p>
-  <p>To get started:</p>
-  <ol>
-    <li>Visit <a href="https://crate-tracker-38b6e.web.app/">https://crate-tracker-38b6e.web.app/</a></li>
-    <li>Sign in with your Gmail account</li>
-    <li>Start tracking your crates!</li>
-  </ol>
-  <hr>
-  <p style="font-size: 12px; color: #666;">
-    This invitation was sent automatically. Please do not reply to this message.
-  </p>
-</div>`;
-
-      const emailText = `Welcome to Crate Tracker!
-
-Visit: https://crate-tracker-38b6e.web.app/
-Sign in with your Gmail account
-
----
-This invitation was sent automatically.`;
-
       logger.log(`✅ User authorized successfully: ${invitation.email}`);
 
       return {
         success: true,
-        message: 'User authorized successfully. Please send the invitation email manually.',
+        message: 'User added successfully.',
         user: newUser,
-        emailContent: {
-          to: invitation.email,
-          subject: emailSubject,
-          html: emailHtml,
-          text: emailText,
-        },
       };
     } catch (error: any) {
       logger.error('Error authorizing user:', error);
@@ -266,11 +226,12 @@ This invitation was sent automatically.`;
   }
 
   /**
-   * Validate Gmail address format
+   * Validate email address format (accepts any valid email)
    */
   static isValidGmailAddress(email: string): boolean {
-    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
-    return gmailRegex.test(email);
+    // Simple email validation - accepts any valid email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+    return emailRegex.test(email);
   }
 
   /**

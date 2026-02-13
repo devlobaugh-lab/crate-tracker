@@ -1,4 +1,20 @@
 # Changelog
+## [Unreleased]
+
+### Changed
+- **User Administration**: Changed label from "Gmail Address" to "Google Account Email" to reflect that Google accounts can have non-gmail addresses
+- **Email Validation**: Changed validation from Gmail-specific to accept any valid email address format
+- **Add User Flow**: Simplified the user addition flow - removed "Preview" button and changed "Send Invite" to "Add" button that directly adds the user without showing email modal
+- **Cleaned up UI**: Removed email preview modal and related states from AdminView
+
+### Fixed
+- **Firestore Security Rules**: Updated to accept any valid email address (not just Gmail)
+- **Firebase Cloud Functions**: Updated email validation to accept any valid email format
+
+### Updated Tests
+- Renamed `gmail-validation.test.ts` to `email-validation.test.ts` to reflect new generic email validation
+- Updated authorization tests to reflect new behavior (any valid email is now accepted)
+
 ## Ver 1.3.7 - Code quality improvements
 
 ### Resolved Deprecated Packages
