@@ -25,9 +25,9 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.token.email.lower()));
     }
 
-    // Helper function to validate Gmail address format
-    function isValidGmailAddress(email) {
-      return email.matches('^[a-zA-Z0-9._%+-]+@gmail\\.com$');
+    // Helper function to validate email address format (accepts any valid email)
+    function isValidEmailAddress(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
     }
 
     // Enhanced authorized users collection - for user checking and admin management
@@ -41,7 +41,7 @@ service cloud.firestore {
       // Only admins can create/modify/delete other users
       // Admins can write to any document, but users can only read their own
       allow create: if isAdmin() &&
-                       isValidGmailAddress(gmailAddress) &&
+                       isValidEmailAddress(gmailAddress) &&
                        request.resource.data.keys().hasAll(['email', 'role', 'status', 'createdAt', 'updatedAt']) &&
                        request.resource.data.role in ['admin', 'normal'] &&
                        request.resource.data.status in ['active', 'inactive'];

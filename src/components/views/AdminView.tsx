@@ -22,11 +22,6 @@ function AdminView({ onBack }: AdminViewProps) {
   const [newUserRole, setNewUserRole] = useState<'admin' | 'normal'>('normal');
   const [submitting, setSubmitting] = useState(false);
 
-  // Email preview states
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewContent, setPreviewContent] = useState<any>(null);
-  const [previewing, setPreviewing] = useState(false);
-
   const showMessage = useCallback((type: 'error' | 'success', message: string) => {
     setError(type === 'error' ? message : '');
     setSuccess(type === 'success' ? message : '');
@@ -165,58 +160,6 @@ function AdminView({ onBack }: AdminViewProps) {
     }
   };
 
-  const handlePreviewEmail = async () => {
-    if (!currentUser?.email || !newUserEmail.trim()) return;
-
-    setPreviewing(true);
-    const invitation: UserInvitation = {
-      email: newUserEmail.trim(),
-      role: newUserRole,
-      invitedBy: currentUser.email,
-    };
-
-    const result = await AuthorizationService.previewInvitation(invitation, currentUser.email);
-    setPreviewing(false);
-
-    if (result.success && result.emailContent) {
-      setPreviewContent(result.emailContent);
-      setShowPreview(true);
-    } else {
-      showMessage('error', result.message || 'Failed to preview email');
-    }
-  };
-
-  const handleSendInvitation = async () => {
-    if (!currentUser?.email || !newUserEmail.trim()) return;
-
-    setSubmitting(true);
-    const invitation: UserInvitation = {
-      email: newUserEmail.trim(),
-      role: newUserRole,
-      invitedBy: currentUser.email,
-    };
-
-    const result = await AuthorizationService.authorizeUser(invitation, currentUser.email);
-    setSubmitting(false);
-
-    if (result.success) {
-      showMessage('success', result.message || 'User authorized! Send the email manually.');
-      setNewUserEmail('');
-      setNewUserRole('normal');
-      setShowPreview(false);
-
-      // Display email content for manual sending
-      setPreviewContent(result.emailContent);
-
-      // Show a new modal with send options
-      setShowPreview(true);
-
-      loadUsers(); // Refresh the list
-    } else {
-      showMessage('error', result.message || 'Failed to authorize user');
-    }
-  };
-
   return (
     <div className='bg-gray-700 px-4 py-4 rounded-2xl shadow-lg lg:max-w-6xl lg:mx-auto'>
       <div className='flex items-center justify-between mb-6'>
@@ -241,12 +184,12 @@ function AdminView({ onBack }: AdminViewProps) {
         <form onSubmit={handleAddUser}>
           <div className='flex'>
             <div className='flex-1'>
-              <label className='block text-sm text-gray-300 mb-2'>Gmail Address</label>
+              <label className='block text-sm text-gray-300 mb-2'>Google Account Email</label>
               <input
                 type='email'
                 value={newUserEmail}
                 onChange={e => setNewUserEmail(e.target.value)}
-                placeholder='user@gmail.com'
+                placeholder='user@example.com'
                 className='w-full py-2 px-3 border rounded-lg bg-gray-700 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
                 required
               />
@@ -265,20 +208,11 @@ function AdminView({ onBack }: AdminViewProps) {
               </select>
             </div>
             <button
-              type='button'
-              disabled={!newUserEmail.trim() || previewing}
-              onClick={handlePreviewEmail}
-              className='py-2 px-3 rounded-lg bg-gray-500 text-white text-sm font-semibold hover:bg-gray-600 disabled:bg-gray-400 transition-colors duration-200'
-            >
-              {previewing ? 'Loading...' : 'Preview'}
-            </button>
-            <button
-              type='button'
+              type='submit'
               disabled={!newUserEmail.trim() || submitting}
-              onClick={handleSendInvitation}
               className='py-2 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-blue-400 transition-colors duration-200'
             >
-              {submitting ? 'Sending...' : 'Send Invite'}
+              {submitting ? 'Adding...' : 'Add'}
             </button>
           </div>
         </form>
@@ -467,86 +401,6 @@ function AdminView({ onBack }: AdminViewProps) {
           </>
         )}
       </div>
-
-      {/* Email Preview Modal */}
-      {showPreview && previewContent && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-          <div className='bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto'>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-4'>
-                <h3 className='text-lg font-semibold text-white'>Email Preview</h3>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className='text-gray-400 hover:text-white text-2xl'
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className='mb-4'>
-                <div className='text-sm text-gray-300 mb-2'>
-                  <strong>To:</strong> {previewContent.to}
-                </div>
-                <div className='text-sm text-gray-300 mb-4'>
-                  <strong>Subject:</strong> {previewContent.subject}
-                </div>
-              </div>
-
-              <div className='bg-white p-4 rounded-lg mb-6'>
-                <div
-                  className='text-gray-800'
-                  style={{ fontFamily: 'Arial, sans-serif' }}
-                  dangerouslySetInnerHTML={{ __html: previewContent.html }}
-                />
-              </div>
-
-              <div className='text-xs text-gray-500 mb-4'>
-                User has been authorized! Send this email through your preferred SMTP service.
-              </div>
-
-              <div className='flex flex-wrap gap-2 justify-end mb-4'>
-                <button
-                  onClick={() => navigator.clipboard.writeText(previewContent.html)}
-                  className='px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors'
-                >
-                  Copy HTML
-                </button>
-                <button
-                  onClick={() => navigator.clipboard.writeText(previewContent.text)}
-                  className='px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors'
-                >
-                  Copy Text
-                </button>
-                <button
-                  onClick={() =>
-                    window.open(
-                      `mailto:${previewContent.to}?subject=${encodeURIComponent(previewContent.subject)}&body=${encodeURIComponent(previewContent.text)}`,
-                      '_blank'
-                    )
-                  }
-                  className='px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors'
-                >
-                  Open in Gmail
-                </button>
-              </div>
-
-              <div className='text-xs text-gray-400 mb-4 p-3 bg-gray-700 rounded'>
-                <strong>For automated SMTP:</strong> Copy the HTML/text content and send through
-                your SMTP server (e.g., Gmail SMTP, SendGrid, etc.)
-              </div>
-
-              <div className='flex gap-3 justify-end'>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className='px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors'
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className='mt-4 text-sm text-gray-400 text-center'>Total users: {users.length}</div>
     </div>
