@@ -1,279 +1,208 @@
-# Crate Tracker Architecture Documentation
+# Architecture
 
-## System Overview
+## Overview
 
-Crate Tracker is a modern web application built with React and Firebase that provides real-time crate tracking functionality for F1 Clash players. The application features offline-first architecture with cloud synchronization, ensuring users can track their progress even without internet connectivity.
+Crate Tracker is an offline-first single-page application built with React and Firebase. Users log crate wins, the app predicts upcoming crates using a master pattern algorithm, and everything syncs across devices in real time.
 
-## High-Level Architecture
+---
 
-```mermaid
-graph TB
-    A[User Browser] --> B[Vite + React App]
-    B --> C[Firebase Auth]
-    B --> D[Firestore Database]
-    B --> E[Local Storage]
+## Tech Stack
 
-    C --> F[Google OAuth]
-    D --> G[(Cloud Firestore)]
-    E --> H[(Browser Storage)]
+| Layer | Technology |
+| ----- | ---------- |
+| Frontend framework | React 18 + TypeScript |
+| Build tool | Vite |
+| Styling | TailwindCSS (mobile-first) |
+| Auth & Database | Firebase (Auth + Firestore) |
+| Validation | Zod |
+| Notifications | react-hot-toast |
+| Testing | Vitest + React Testing Library |
 
-    subgraph "Authentication Flow"
-    C
-    F
-    end
+---
 
-    subgraph "Data Storage"
-    D
-    G
-    E
-    H
-    end
+## Application Structure
 
-    B --> I[Admin Panel]
-    I --> J[User Management]
-    J --> D
+There's no client-side router. Navigation is controlled by a `view` state variable in `App.tsx`:
+
+```text
+'intro'  →  First-time onboarding (no crate history yet)
+'main'   →  Primary tracking interface
+'config' →  Settings, backup/restore, admin access
+'admin'  →  User management (admin role only)
 ```
 
-## Architecture Components
+A `showFastForward` boolean controls the Fast Forward modal, which overlays any view.
 
-### Frontend Application Layer
+---
 
-#### React Application (Vite)
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite for fast development and optimized production builds
-- **UI Framework**: TailwindCSS for responsive, mobile-first design
-- **State Management**: Custom React hooks with local component state
-- **Routing**: Component-based navigation (no external router)
+## State Management
 
-#### Key Components
-- `App.tsx`: Main application component with error boundaries
-- `AuthContext.tsx`: Central authentication and data management context
-- `Login.tsx`: Google OAuth authentication interface
-- `AdminView.tsx`: Administrative user management interface
-- `ConfigView.tsx`: User data backup/restore functionality
+The app uses React Context combined with a set of custom hooks. There is no Redux or external state library.
 
-### Backend Services
+### Hook responsibilities
 
-#### Firebase Authentication
-- **Provider**: Google OAuth integration
-- **Authorization**: Gmail-based access control with admin-managed user list
-- **Security**: Server-side security rules enforce access restrictions
-- **Token Management**: Automatic token refresh and session handling
+| Hook | Responsibility |
+| ---- | -------------- |
+| `useAppState` | Core state (crates array + config). Initializes from Firebase or localStorage. |
+| `useCrateManagement` | Mutations: `addCrate`, `undoCrate`, `fastForwardSubmit` |
+| `useCratePattern` | Derives predictions and special crate countdown from current history |
+| `useOfflineSync` | Detects online/offline, queues actions, handles retry |
+| `useDebouncedSave` | Throttles Firestore writes to 500ms |
+| `useIgnoreRemoteChanges` | Prevents sync conflicts during bulk operations |
 
-#### Cloud Firestore
-- **Database**: NoSQL document database with real-time capabilities
-- **Collections**:
-  - `authorizedUsers`: Admin-managed user access list
-  - `users`: User data storage (crates, configuration)
-  - `test`: Development testing collection
-- **Security**: Granular security rules with role-based access
+### Data flow
 
-### Data Flow Architecture
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant A as App
-    participant LS as Local Storage
-    participant FB as Firebase
-    participant DB as Firestore
-
-    Note over U,DB: Authentication & Data Initialization
-    U->>A: Login Request
-    A->>FB: Google OAuth Authentication
-    FB-->>A: Auth Token
-    A->>DB: Check User Authorization
-    DB-->>A: Authorized/Unauthorized
-
-    Note over U,DB: Online Data Flow
-    U->>A: Add Crate
-    A->>A: Update Local State
-    A->>DB: Save to Firestore (Debounced)
-    A->>LS: Clear Offline Data
-
-    Note over U,DB: Offline Data Flow
-    U->>A: Add Crate (Offline)
-    A->>A: Update Local State
-    A->>LS: Save to Local Storage
-    Note right of A: Queue for sync when online
-
-    Note over U,DB: Synchronization
-    A->>FB: Network Status Check
-    FB-->>A: Online Available
-    LS->>A: Load Offline Data
-    A->>DB: Bulk Sync Pending Changes
+```text
+User action (tap crate, undo, fast forward)
+  ↓
+setState() updates React state immediately (instant UI feedback)
+  ↓
+useEffect triggers debounced save (500ms delay)
+  ↓
+Online → write to Firestore → Firebase listener broadcasts to other devices
+Offline → write to localStorage → queued for retry when connection returns
 ```
 
-### State Management Strategy
+### Conflict prevention
 
-```mermaid
-stateDiagram-v2
-    [*] --> Loading
+The Fast Forward operation adds potentially hundreds of crates at once. During this operation, `ignoreRemoteChanges` is set to `true` for 10 seconds to prevent incoming Firebase sync events from overwriting the in-progress bulk update.
 
-    Loading --> OnlineFirst: Online & Synced
-    Loading --> OfflineFirst: Offline & Error
+---
 
-    OnlineFirst --> FirebaseSync: State Changes
-    OfflineFirst --> LocalStorageSync: State Changes
+## Offline-First Design
 
-    FirebaseSync --> OnlineFirst: Success
-    FirebaseSync --> OfflineFallback: Error
+Every state change writes to localStorage immediately. Firestore writes are secondary (debounced, may fail). This means:
 
-    OfflineFallback --> OfflineFirst: Persist Locally
-    LocalStorageSync --> OfflineFirst: Success
+- The app is fully functional with no internet connection
+- No data is lost during network outages
+- On reconnect, localStorage data is synced to Firestore
+- localStorage is cleared after a successful Firestore sync
 
-    OnlineFirst --> [*]: Logout
-    OfflineFirst --> [*]: Logout
+---
 
-    note right of OnlineFirst : Firebase + Local Storage
-    note right of OfflineFirst : Local Storage Only
-```
+## Authentication & Authorization
 
-#### Key Features
-- **Offline-First Approach**: App works fully offline, syncs when possible
-- **Intelligent Prioritization**: Uses available data sources based on network status
-- **Debounced Saves**: Prevents excessive Firestore writes (500ms delay)
-- **Conflict Resolution**: Firebase takes precedence when online, with ignore flags
-- **Action Queuing**: Offline changes are queued for synchronized replay
+Firebase Auth handles Google OAuth. Authorization (who can actually use the app) is a separate layer:
 
-### Security Architecture
+1. **Firebase Auth** — Google sign-in, token management
+2. **`authorizedUsers` collection** — admin-managed whitelist of Gmail addresses
+3. **Firestore security rules** — enforce that users can only read/write their own data
 
-```mermaid
-graph TD
-    A[User Request] --> B{Authenticated?}
-    B -->|No| C[Login Required]
+On login, the app checks whether the signed-in email exists in `authorizedUsers` and has `status: 'active'`. If not, the user sees the Unauthorized Access screen. Admins have a `role: 'admin'` field that unlocks the admin panel and grants read/write access to the full `authorizedUsers` collection.
 
-    B -->|Yes| D{Authorized?}
-    D -->|No| E[Unauthorized Access]
+---
 
-    D -->|Yes| F{Role Check}
+## Data Model
 
-    F -->|Admin| G[Full Access]
-    F -->|User| H[User Collections Only]
+### Firestore collections
 
-    G --> I[CRUD Operations]
-    H --> J[Own Data Only]
+**`users/{userId}`** — crate tracking data
 
-    I --> K[Security Rules]
-    J --> K
-
-    K --> L[(Firestore)]
-```
-
-#### Security Layers
-1. **Authentication**: Firebase Auth with Google OAuth
-2. **Authorization**: Gmail-based whitelist with admin management
-3. **Access Control**: Firestore security rules enforce data isolation
-4. **Encryption**: Data encrypted in transit and at rest
-5. **Role-Based Access**: Admin vs. normal user permissions
-
-### Data Model
-
-#### User Document Structure
 ```typescript
-interface UserData {
-  allCrates: string[];  // Array of crate colors won
+{
+  allCrates: string[]        // ordered history of crate types
   config: {
-    wins: number;       // Total game wins
-    gpWins: number;     // Grand Prix wins (subset of wins)
-  };
+    wins: number             // total win count
+    gpWins: number           // GP-specific win count
+  }
 }
 ```
 
-#### Authorized User Document
+**`authorizedUsers/{email}`** — access control
+
 ```typescript
-interface AuthorizedUser {
-  email: string;        // Gmail address (lowercased)
-  role: 'admin' | 'normal';
-  status: 'active' | 'inactive';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  invitedBy?: string;   // Admin who created record
+{
+  email: string              // lowercase Gmail address (also the document ID)
+  role: 'admin' | 'normal'
+  status: 'active' | 'inactive'
+  invitedBy: string          // email of the admin who added them
+  invitedAt: Timestamp
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 ```
 
-### Deployment Architecture
+### Crate encoding
 
-#### Firebase Hosting
-- **Production**: Continuously deployed from main branch
-- **Staging**: Test environment for validation
-- **GitHub Actions**: Automated CI/CD pipeline
+Crate types are stored as single characters:
 
-#### Docker Support
-- **Containerization**: Standalone deployment option
-- **Environment Variables**: Flexible configuration
-- **Registry**: GitHub Container Registry support
+| Character | Crate type |
+| --------- | ---------- |
+| `B` | Green (standard) |
+| `G` | Gold |
+| `P` | Platinum |
+| `L` | Legendary |
+| `X` | GP (Grand Prix / blue) |
+| `?` | Unknown |
 
-### Performance Considerations
+### localStorage
 
-#### Frontend Optimizations
-- **Code Splitting**: Vite enables intelligent bundle splitting
-- **Lazy Loading**: Components loaded on demand
-- **Debounced Operations**: Reduces API calls and improves UX
-- **Responsive Design**: Mobile-first approach with TailwindCSS
+Keyed at `crate-tracker:v1`. Same shape as the Firestore `users` document.
 
-#### Backend Optimizations
-- **Real-time Updates**: Firestore listeners for live data sync
-- **Offline Persistence**: IndexedDB for local data caching
-- **Batch Operations**: Bulk writes for performance
-- **Security Efficiency**: Rules evaluated server-side without code bloat
+---
 
-#### Monitoring & Reliability
-- **Error Boundaries**: Component-level error isolation
-- **Performance Monitoring**: Built-in performance tracking utilities
-- **Network Detection**: Automatic offline/online mode switching
-- **Retry Logic**: Failed operations automatically retry
+## The Prediction Algorithm
 
-## Technology Stack
+F1 Clash crates follow a fixed 810-element master pattern. The algorithm works by finding where the user's history sits in that pattern.
 
-### Core Technologies
-- **Frontend**: React 18, TypeScript, Vite
-- **UI**: TailwindCSS, Heroicons
-- **Backend**: Firebase (Auth, Firestore)
-- **Testing**: Vitest, React Testing Library
-- **Linting**: ESLint with TypeScript integration
-- **Build**: Vite with optimized production builds
+### How it works
 
-### Development Tools
-- **Package Manager**: npm
-- **Testing**: Vitest with UI support
-- **Code Quality**: Prettier for formatting
-- **Type Checking**: TypeScript strict mode
-- **CI/CD**: GitHub Actions with automated deployments
+1. Slide through every possible starting position in the master pattern
+2. At each position, check whether the sequence matches the user's crate history
+3. Collect all positions that match
+4. Look at the next N elements after each match
+5. Where all matching positions agree → return that value
+6. Where they disagree → return `?`
 
-## Architectural Decisions
+This means:
 
-### Why Firebase?
-- **Scalability**: Serverless architecture scales automatically
-- **Real-time**: Built-in real-time synchronization
-- **Security**: Comprehensive security rules and authentication
-- **Offline**: Robust offline support with automatic sync
-- **Ecosystem**: Integrated auth, hosting, and database
+- With no history: all predictions are `?`
+- With a short history: some predictions may be `?` (ambiguous)
+- With enough history to uniquely identify position: all predictions are certain
 
-### Why React Hooks?
-- **Simplicity**: No external state management library complexity
-- **Performance**: Direct integration with React's rendering system
-- **Testability**: Pure functions with clear dependencies
-- **Maintainability**: Co-located logic with components
+### Special crate lookahead
 
-### Why Offline-First?
-- **Reliability**: App works without internet connectivity
-- **User Experience**: Instant feedback and responsiveness
-- **Data Safety**: Local persistence prevents data loss
-- **Sync Flexibility**: Users control when and how to sync data
+The "next Platinum/Legendary" counter uses the same algorithm but scans up to 100 positions forward, not just 10. It returns the first position where a Platinum (`P`) or Legendary (`L`) appears with certainty across all matching positions.
 
-## Future Considerations
+---
 
-### Scalability Plans
-- **Database Sharding**: Potential Firestore collection partitioning
-- **Caching Layer**: CDN integration for static assets
-- **Microservices**: Potential backend function separation
-- **Analytics**: Usage metrics and performance monitoring
+## Deployment
 
-### Feature Extensions
-- **Mobile Apps**: React Native cross-platform support
-- **Advanced Analytics**: Detailed crate pattern analysis
-- **Social Features**: Leaderboards and community sharing
-- **API Integrations**: Third-party game integrations
+### Environments
 
-This architecture provides a solid foundation for current needs while maintaining flexibility for future growth and feature additions.
+| Environment | Trigger | Firebase project |
+| ----------- | ------- | ---------------- |
+| Production | Push to `main` | `crate-tracker-38b6e` |
+| Staging | Push to `staging` or manual | `crate-tracker-staging` |
+
+### CI/CD pipeline
+
+GitHub Actions runs the full check suite before deploying:
+
+```bash
+npm run type-check
+npm run lint
+npm run format:check
+npm run test:run
+npm run build
+firebase deploy
+```
+
+Both environments use separate sets of `VITE_FIREBASE_*` environment variables injected as GitHub Actions secrets.
+
+Firebase Hosting is configured as a SPA — all paths rewrite to `index.html`.
+
+---
+
+## Error Handling
+
+Three nested error boundaries in `App.tsx` catch different failure modes:
+
+```text
+ErrorBoundary (generic)
+  └─ FirebaseErrorBoundary (Firebase-specific, handles COOP policy issues)
+       └─ AuthErrorBoundary (auth-specific failures)
+            └─ AuthProvider → AppContent
+```
+
+Each boundary shows a fallback UI rather than a blank screen or uncaught exception.
