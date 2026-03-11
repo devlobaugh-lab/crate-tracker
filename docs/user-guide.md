@@ -1,128 +1,158 @@
-# User Guide
+# Crate Tracker User Guide
 
-Crate Tracker helps F1 Clash players track their crate openings and predict which crates are coming next. Because F1 Clash crates follow a fixed repeating pattern, the app can tell you exactly what to expect — including when your next Platinum or Legendary crate is coming.
+## Overview
 
-## Getting Access
+Crate Tracker is a web application designed for tracking F1 Clash crate openings. It helps users record their crate winnings, predict future crates based on patterns, and maintain a personal history of their gameplay progress.
 
-The app is invite-only. You need a Gmail address and an admin to add you before you can sign in. Once you're invited:
+## Features
 
-1. Open the app and click **Sign in with Google**
-2. Choose your Gmail account
-3. You're in
+### Core Functionality
+- **Crate Tracking**: Record each crate you win with color coding
+- **Win Counter**: Automatic tracking of your game wins
+- **Prediction Algorithm**: Algorithm predicts the next 10 crates based on patterns
+- **Special Crate Forecasting**: Shows how many crates until you get a Platinum or Legendary crate
+- **Undo Functionality**: Remove the last entered crate (can be used multiple times)
+- **Fast Forward**: Quickly jump forward by entering multiple wins at once
 
-If you see an "Unauthorized Access" screen, your account hasn't been added yet. Contact an admin.
+### Data Management
+- **Cloud Synchronization**: Data syncs across devices via Google Account
+- **Offline Support**: Works offline and syncs when reconnection occurs
+- **Backup & Restore**: Export/import your data as JSON files
+- **Reset Functionality**: Start over with fresh data
 
----
+### Administration
+- **Invite-Only System**: Secure access restricted to authorized users
+- **Admin Panel**: Administrators can manage user access
+- **Email Invitations**: Automated invitation system for new users
 
-## Your First Time
+## Getting Started
 
-The first screen you'll see is an introduction. From there, start entering your crates in the order you won them. The more history you enter, the more accurate the predictions become.
+### 1. Authentication
+- Click "Sign In" and authenticate with your Google Account
+- You must be authorized by an administrator to access the app
+- Contact an admin if you need access granted
 
-If you already know your total win count from the game, head to **Settings** and enter it there — this keeps the app in sync with your actual progress.
+### 2. First Time Use
+- Upon first login, you'll see the introductory screen
+- Start entering crates as you win them in games
+- The app will begin making predictions after a few crates are entered
 
----
+## How to Use
 
-## Tracking Crates
+### Entering Crates
+1. Open the app and sign in
+2. Look at the crate grid showing different colors
+3. Click the color that matches your won crate
+4. The app automatically increments your win counter
+5. The crate is added to your history and predictions update
 
-The main screen shows six buttons, one for each crate type. Tap the one that matches what you just won in-game:
+### Understanding the Interface
 
-| Button | Crate Type |
-|--------|-----------|
-| Green | Standard green crate |
-| Gold | Gold crate |
-| Platinum | Platinum crate |
-| Legendary | Legendary crate |
-| GP | Grand Prix (blue) crate |
-| ? | Unknown — if you're not sure |
+#### Win Counter
+- Located in the top-right corner
+- Shows your total game wins (GP Wins)
+- Used by the prediction algorithm
 
-Each tap adds that crate to your history and increments your win counter. GP crates count toward both your total wins and your GP win count.
+#### Last 10 Crates
+- Shows your most recent crate openings
+- Visual representation of your recent wins
 
-### What you see on screen
+#### Predictions
+- Next 10 crates the algorithm predicts you'll get
+- Based on patterns in your crate history
 
-- **Last 10 crates** — your most recent wins, shown as colored boxes
-- **Next 10 predictions** — what the algorithm expects you'll get next
-- **Special crate countdown** — how many crates until your next Platinum or Legendary
+#### Special Crate Counter
+- Shows how many crates until you get a special (Platinum/Legendary) crate
+- Displays "The next crate is [color]" when it's imminent
+- Shows "?" when insufficient data for prediction
 
-If the predictions show **?**, it means the app doesn't have enough history to be certain. Keep entering crates and confidence improves.
+### Advanced Features
 
-### Undoing a mistake
+#### Undo
+- Located in the crate grid
+- Removes the last entered crate
+- Can be used multiple times to correct entries
+- Also decrements your win counter
 
-Hit the **Undo** button to remove the last crate you entered. This also decrements your win counter. You can undo as many times as needed.
+#### Fast Forward
+- Located in the crate grid
+- Allows bulk entry of multiple wins
+- Enter additional GP wins and current total
+- Simulates entering multiple crates at once
 
----
+#### Configuration Panel
+Access the config panel via the settings icon (⚙️):
 
-## Fast Forward
+- **Adjust Wins**: Sync your in-game win counter with the app
+- **Backup Data**: Download your data as a JSON file
+- **Restore Data**: Upload a previously backed-up JSON file
+- **Reset All Data**: Clear everything and start fresh
 
-If you've won crates without logging them, use **Fast Forward** to catch up without tapping every single one.
+### Admin Features
 
-1. Open the Fast Forward panel (button in the crate grid)
-2. Enter how many additional GP crates you won
-3. Enter your new total win count
-4. Submit — the app fills in the gaps using the prediction algorithm
+Administrators have access to additional functionality:
 
-This is also useful when you're importing historical data or correcting a discrepancy between the app and your in-game progress.
+#### User Management
+- View all authorized users
+- Grant/revoke user access
+- Send email invitations to new users
 
----
+#### Invitation System
+- Add users by Gmail address
+- Choose user role (admin/normal)
+- Generate email content for invitations
+- Track invitation status
 
-## Settings
+## Data Security
 
-Tap the gear icon to open Settings.
+- All data is stored securely in Firebase Cloud Firestore
+- Authentication requires Google Account verification
+- Access is restricted to authorized Gmail addresses only
+- Data is encrypted in transit and at rest
+- Admin control ensures only invited users can join
 
-### Adjusting win counts
+## Technical Requirements
 
-If your in-game win totals don't match what the app shows, you can manually correct them here. Enter the right numbers and save.
-
-### Backing up your data
-
-Use **Export Data** to download a JSON file of everything — your crate history, win counts, and config. Save this file somewhere safe.
-
-### Restoring from a backup
-
-Use **Import Data** to upload a previously exported JSON file. This replaces your current data entirely, so make sure you're importing the right file.
-
-### Resetting
-
-**Reset All Data** wipes your crate history and sets all counters back to zero. You'll be asked to confirm before anything is deleted.
-
----
-
-## Admin Features
-
-Admins have access to a **User Administration** section in Settings.
-
-### Managing users
-
-- **Add a user** — enter their Gmail address and choose a role (admin or normal)
-- **Activate/deactivate** — toggle access without deleting the account
-- **Change roles** — promote someone to admin or demote them
-- **Delete users** — permanently removes their access (requires confirmation)
-
-The app generates invitation email content you can copy and send manually. There's no automatic email sending built in.
-
-### Safety limits
-
-Admins can't accidentally lock themselves out: the system prevents the last remaining admin from demoting or deactivating their own account.
-
----
-
-## Multi-Device Sync
-
-Your data syncs automatically across all devices via your Google account. Changes made on one device appear on another within seconds when both are online.
-
-The app also works offline. Any crates you enter while offline are saved locally and sync automatically when your connection returns.
-
----
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Google Account for authentication
+- Stable internet connection (with offline fallback)
+- Mobile-responsive design works on all devices
 
 ## Troubleshooting
 
-**Predictions show all ?**
-The algorithm needs enough history to find your position in the pattern. Keep entering known crates and certainty will increase.
+### Common Issues
 
-**Win count doesn't match the game**
-Go to Settings and manually correct the numbers. If you're far off, use Fast Forward to fill the gap.
+**"Unauthorized Access"**
+- You haven't been granted access by an admin
+- Contact an administrator to request access
 
-**Data not syncing**
-Check your internet connection. The app will sync automatically once it's restored. You can also try refreshing the page.
+**Predictions Not Showing**
+- Need at least a few crates entered to generate predictions
+- Check that your win counter is accurate
 
-**"Unauthorized Access" screen**
-Your Gmail address hasn't been added to the system. Contact an admin to request access.
+**Data Not Syncing**
+- Check internet connection
+- Try refreshing the page
+- Data will sync automatically when connection returns
+
+**Can't Access Admin Panel**
+- You must have admin privileges
+- Contact a system administrator for elevated access
+
+### Data Recovery
+
+- Use the backup feature regularly to export your data
+- Keep JSON files safe for restoration
+- Import backup files through the config panel
+
+## Best Practices
+
+1. **Regular Backups**: Export your data periodically
+2. **Accurate Win Counting**: Keep your win counter synced with in-game progress
+3. **Consistent Entry**: Enter crates immediately after wins
+4. **Verify Predictions**: Algorithm accuracy improves with more data
+5. **Admin Coordination**: Coordinate with admins for user management
+
+## Privacy & Terms
+
+The app stores only crate tracking data associated with your Google Account. Data is used solely for the crate tracking functionality and is not shared with third parties. Users must be authorized by administrators before gaining access.

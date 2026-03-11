@@ -64,15 +64,8 @@ export const FileUploadSchema = z
     message: 'File must be a JSON file',
   });
 
-// Email validation with Gmail-specific checks
-export const GmailAddressSchema = z
-  .string()
-  .email()
-  .toLowerCase()
-  .refine(email => email.endsWith('@gmail.com'), { message: 'Only Gmail addresses are allowed' })
-  .refine(email => !email.includes('+'), {
-    message: 'Gmail aliases (+ addresses) are not allowed',
-  });
+// Email validation for Google Account emails (any valid email address)
+export const GoogleAccountEmailSchema = z.string().email().toLowerCase();
 
 // Admin role change validation
 export const AdminRoleChangeSchema = z
@@ -128,8 +121,8 @@ export function validateFileUpload(file: unknown): File {
   return FileUploadSchema.parse(file);
 }
 
-export function validateGmailAddress(email: unknown): string {
-  return GmailAddressSchema.parse(email);
+export function validateGoogleAccountEmail(email: unknown): string {
+  return GoogleAccountEmailSchema.parse(email);
 }
 
 export function validateAdminRoleChange(data: unknown): AdminRoleChange {

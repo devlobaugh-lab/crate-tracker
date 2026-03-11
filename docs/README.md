@@ -1,8 +1,16 @@
 # Crate Tracker Documentation
 
-## Documents
+This directory contains comprehensive documentation for the Crate Tracker application.
 
-- [User Guide](./user-guide.md) — How to use the app: tracking crates, predictions, fast forward, settings, and admin features
-- [Architecture](./architecture.md) — System design: state management, offline-first approach, the prediction algorithm, data model, and deployment
-- [Engineering Guide](./engineering.md) — Developer reference: setup, commands, project structure, key implementation details, Firebase config, and testing
-- [API Reference](./api-reference.md) — TypeScript interfaces, custom hooks, utility functions, component props, and constants
+## Documentation Overview
+
+- [User Guide](./user-guide.md) - How to use the application
+- [Architecture](./architecture.md) - System architecture and design
+- [Engineering](./engineering.md) - Technical implementation details
+- [API Reference](./api-reference.md) - API documentation if applicable
+
+## Quick Start
+
+The Crate Tracker is a web app for tracking F1 Clash crate openings. Users can enter crates won, view predictions for future crates, and sync data across devices.
+
+For detailed setup instructions, see the main [README.md](../README.md) in the project root.
