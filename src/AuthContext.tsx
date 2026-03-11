@@ -7,7 +7,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot, FirestoreError } from 'firebase/firestore';
-import { auth, db, googleProvider } from './firebase.ts';
+import { auth, db, googleProvider, forceOfflineMode } from './firebase.ts';
 import { User, AuthContextType } from './types';
 import logger from './utils/logger';
 import AuthorizationService from './utils/authorization';
@@ -55,15 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     currentUser,
     onQuotaExceeded: () => {
       // Force disable Firestore network to prevent further operations
-      import('./firebase').then(({ forceOfflineMode }) => {
-        forceOfflineMode();
-      });
+      forceOfflineMode();
     },
     onOperationBlocked: () => {
       // Disable Firestore network to prevent further blocked requests
-      import('./firebase').then(({ forceOfflineMode }) => {
-        forceOfflineMode();
-      });
+      forceOfflineMode();
     },
   });
 
