@@ -16,6 +16,7 @@ export const AppStateSchema = z.object({
     .object({
       wins: z.number().int().min(0).default(0),
       gpWins: z.number().int().min(0).default(0),
+      migrationNoticeSeen: z.boolean().optional(),
     })
     .default({ wins: 0, gpWins: 0 }),
 });
@@ -137,9 +138,10 @@ export function migrateToMultiSeries(rawData: unknown): { migrated: boolean; dat
       allCrates: i === 11 ? (data.allCrates as string[]) : [],
     }));
     try {
+      const existingConfig = data.config || { wins: 0, gpWins: 0 };
       const migrated = AppStateSchema.parse({
         series,
-        config: data.config || { wins: 0, gpWins: 0 },
+        config: { ...existingConfig, migrationNoticeSeen: false },
       });
       return { migrated: true, data: migrated };
     } catch {
