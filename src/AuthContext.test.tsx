@@ -69,7 +69,9 @@ describe('AuthContext', () => {
   };
 
   const mockUserData = {
-    allCrates: ['crate1', 'crate2'],
+    series: Array.from({ length: 12 }, (_, i) =>
+      i === 11 ? { allCrates: ['crate1', 'crate2'] } : { allCrates: [] }
+    ),
     config: { wins: 5, gpWins: 2 },
   };
 

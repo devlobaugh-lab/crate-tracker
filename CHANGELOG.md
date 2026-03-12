@@ -1,4 +1,39 @@
 # Changelog
+
+## [Unreleased] — Multi-Series Support
+
+### Added
+- 12 independent series per user, each with its own crate history and pattern prediction
+- Series selector `<select>` in the header replacing the static "Crate Tracker" title — no additional screen space used
+- `currentSeriesIndex` (0–11) UI state, persisted to `localStorage('crate-tracker-series-index')`, defaults to `0`
+- `SeriesStateSchema` and `migrateToMultiSeries()` in `validation.ts`
+- `ImportResult` union type for typed import handling (`'full'` vs `'single'`)
+- `wasMigrated` flag in `AuthContext` to redirect users to Series 12 after automatic data migration
+
+### Changed
+- **AppState shape:** `allCrates: string[]` replaced by `series: [{ allCrates: string[] }, ...]` (12 entries). `config` (wins, gpWins) remains global across all series and is unchanged.
+- **`useCrateManagement`:** now accepts `currentSeriesIndex`; all mutations (`addCrate`, `undoCrate`, `fastForwardSubmit`) scope crate history to the selected series while global win counters accumulate across series.
+- **`AuthContext.loadUserData`:** passes raw Firestore data through `migrateToMultiSeries`; writes migrated data back immediately (non-debounced, one-time).
+- **`AuthContext.exportUserData`:** produces v2 JSON (`{ version: 2, series, config, exportedAt }`).
+- **`AuthContext.importUserData`:** returns `ImportResult` union instead of `AppState` — callers decide how to merge.
+- **`ConfigView`:** reset button now labelled "Reset Current Series" and clears only the active series; direct `saveUserData` call removed, state update delegated to `App.tsx` via `onChange`.
+- **`useOfflineSync.loadOfflineData`:** runs stored data through `migrateToMultiSeries` before returning.
+- All local `AppState` interface declarations updated across hooks (`useAppState`, `useCrateManagement`, `useDebouncedSave`, `useOfflineSync`, `useSyncManager`).
+
+### Migration
+Existing users with single-series data are migrated transparently on first load:
+- Legacy `allCrates` array → `series[11].allCrates` (Series 12), other series start empty
+- `currentSeriesIndex` is redirected to 11 so users land on their existing data
+- Migrated document is written back to Firestore immediately; subsequent loads read the new format
+
+### Import/Export behaviour
+| File type | Import behaviour |
+|---|---|
+| v2 (`version: 2`, `series` array) | Full restore: replaces all 12 series + config |
+| Legacy (`allCrates`, no `version`) | Single-series: imports into current series only, config unchanged |
+
+---
+
 ## [Unreleased]
 
 ### Changed
