@@ -18,6 +18,7 @@ import SmallRow from './components/common/SmallRow.tsx';
 import ConfigView from './components/views/ConfigView.tsx';
 import AdminView from './components/views/AdminView.tsx';
 import IntroView from './components/views/IntroView.tsx';
+import MigrationNoticeView from './components/views/MigrationNoticeView.tsx';
 import FastForward from './components/views/FastForward.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
@@ -51,7 +52,7 @@ function AppContent() {
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   // Use the extracted app state hook
-  const { state, setState } = useAppState({
+  const { state, setState, isInitialized } = useAppState({
     currentUser,
     userData,
     isOnline,
@@ -100,6 +101,29 @@ function AppContent() {
     allCrates.length === 0 && isNewUser ? 'intro' : 'main'
   );
   const [showFastForward, setShowFastForward] = useState(false);
+  const [showMigrationNotice, setShowMigrationNotice] = useState(false);
+
+  // Show migration notice once to users who were migrated to multi-series
+  useEffect(() => {
+    if (!isInitialized) return;
+    const seen = state.config.migrationNoticeSeen;
+    if (seen === false) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowMigrationNotice(true);
+      setCurrentSeriesIndex(11);
+    } else if (seen === undefined) {
+      const hasAnyData = state.series.some(s => s.allCrates.length > 0);
+      if (hasAnyData) {
+        // Backfill: already-migrated user — stamp false so dismiss writes true to Firestore
+        setState(s => ({ ...s, config: { ...s.config, migrationNoticeSeen: false } }));
+      }
+    }
+  }, [isInitialized, state.config.migrationNoticeSeen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMigrationNoticeDismiss = useCallback(() => {
+    setState(s => ({ ...s, config: { ...s.config, migrationNoticeSeen: true } }));
+    setShowMigrationNotice(false);
+  }, [setState]);
 
   // After migration, redirect user to Series 12 where their legacy data landed
   useEffect(() => {
@@ -109,7 +133,7 @@ function AppContent() {
       setCurrentSeriesIndex(11);
       setView('main'); // migrated users always have data somewhere
     }
-  }, [wasMigrated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [wasMigrated]);
 
   // Memoize the next special crate display text
   const specialCrateText = useMemo(() => {
@@ -211,7 +235,7 @@ function AppContent() {
           </div>
         }
       >
-        {view === 'main' && !showFastForward && (
+        {view === 'main' && !showFastForward && !showMigrationNotice && (
           <main>
             <ErrorBoundary
               fallback={
@@ -316,6 +340,8 @@ function AppContent() {
             currentTotal={state.config.wins}
           />
         )}
+
+        {showMigrationNotice && <MigrationNoticeView onDismiss={handleMigrationNoticeDismiss} />}
 
         {view === 'intro' && (
           <ErrorBoundary

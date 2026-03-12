@@ -1,7 +1,8 @@
 // Logger utility for conditional development logging
 // Only logs info/debug messages in development mode, keeps warn/error always available
 
-const isDevelopment = import.meta.env.MODE === 'development';
+//const isDevelopment = import.meta.env.MODE === 'development';
+const isDevelopment = false;
 
 const logger = {
   log: (...args: any[]) => {
