@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — Multi-Series Support
+## 2.0.0 — Multi-Series Support
 
 ### Added
 - 12 independent series per user, each with its own crate history and pattern prediction
