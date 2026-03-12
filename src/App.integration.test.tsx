@@ -159,7 +159,7 @@ describe('App Integration Tests', () => {
         series: Array.from({ length: 12 }, (_, i) =>
           i === 0 ? { allCrates: ['A', 'B', 'C'] } : { allCrates: [] }
         ),
-        config: { wins: 0, gpWins: 0 },
+        config: { wins: 0, gpWins: 0, migrationNoticeSeen: true },
       };
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,

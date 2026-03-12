@@ -7,6 +7,7 @@ interface AppState {
   config: {
     wins: number;
     gpWins: number;
+    migrationNoticeSeen?: boolean;
   };
 }
 
