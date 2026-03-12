@@ -76,8 +76,9 @@ describe('App Integration Tests', () => {
     status: 'active',
   };
 
+  // New multi-series format
   const mockUserData = {
-    allCrates: [],
+    series: Array.from({ length: 12 }, () => ({ allCrates: [] })),
     config: { wins: 0, gpWins: 0 },
   };
 
@@ -153,17 +154,23 @@ describe('App Integration Tests', () => {
         data: () => mockAuthorizedUser,
       } as any);
 
-      // Mock user data with some crates so it shows main view instead of intro
+      // Mock user data with some crates in series[0] so it shows main view
+      const dataWithCrates = {
+        series: Array.from({ length: 12 }, (_, i) =>
+          i === 0 ? { allCrates: ['A', 'B', 'C'] } : { allCrates: [] }
+        ),
+        config: { wins: 0, gpWins: 0 },
+      };
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,
-        data: () => ({ ...mockUserData, allCrates: ['A', 'B', 'C'] }),
+        data: () => dataWithCrates,
       } as any);
 
       render(<App />);
 
-      // Wait for app to load
+      // Wait for app to load — series selector replaces the old h1
       await waitFor(() => {
-        expect(screen.getByText('Crate Tracker')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
       });
     });
 
@@ -229,9 +236,9 @@ describe('App Integration Tests', () => {
 
       render(<App />);
 
-      // Wait for app to load
+      // Wait for app to load — series selector replaces the old h1
       await waitFor(() => {
-        expect(screen.getByText('Crate Tracker')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
       });
     });
 

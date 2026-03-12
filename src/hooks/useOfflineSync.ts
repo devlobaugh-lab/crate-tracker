@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { checkNetworkStatus } from '../firebase';
+import { migrateToMultiSeries } from '../utils/validation';
 import logger from '../utils/logger';
 
 // Define the state interface
 interface AppState {
-  allCrates: string[];
+  series: { allCrates: string[] }[];
   config: {
     wins: number;
     gpWins: number;
@@ -159,7 +160,7 @@ export function useOfflineSync({
             logger.log('💾 Successfully saved offline data to localStorage');
             logger.log('💾 Data preview:', {
               wins: data.config.wins,
-              crates: data.allCrates.length,
+              totalSeries: data.series.length,
             });
           } else {
             logger.error('❌ Failed to save offline data to localStorage');
@@ -174,6 +175,7 @@ export function useOfflineSync({
 
   /**
    * Loads previously saved offline data from localStorage.
+   * Runs data through migrateToMultiSeries to handle legacy formats.
    * Returns null if no data exists or parsing fails.
    *
    * @returns Restored application state or null
@@ -194,7 +196,7 @@ export function useOfflineSync({
           logger.log('📤 Loaded offline data from localStorage:');
           logger.log('  - Timestamp:', timestamp);
           logger.log('  - Wins:', data.config.wins);
-          logger.log('  - Crates:', data.allCrates.length);
+          logger.log('  - Series:', data.series?.length ?? 0);
           logger.log('  - Queued actions:', queuedActions.length);
 
           // Restore action queue if it exists
@@ -202,9 +204,12 @@ export function useOfflineSync({
             setActionQueue(queuedActions);
           }
 
+          // Migrate legacy format if needed
+          const { data: migratedData } = migrateToMultiSeries(data);
+
           // Don't automatically set state - return the data for App.jsx to handle
           logger.log('✅ Retrieved offline data from localStorage');
-          return data;
+          return migratedData;
         } catch (error) {
           logger.error('❌ Failed to parse localStorage data:', error);
           logger.error('❌ Raw data that failed to parse:', savedData);
