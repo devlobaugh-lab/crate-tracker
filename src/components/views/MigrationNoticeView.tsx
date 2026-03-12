@@ -23,14 +23,13 @@ function MigrationNoticeView({ onDismiss }: MigrationNoticeViewProps) {
           Crate Tracker now supports multiple series!
         </div>
         <div className='text-xs text-gray-300 mb-3'>
-          As the game has changed to have a separate crate history for each series, I have 
-          updated the app to do the same. Now each series has its own crate history and 
-          predictions. 
+          As the game has changed to have a separate crate history for each series, I have updated
+          the app to do the same. Now each series has its own crate history and predictions.
         </div>
         <div className='text-xs text-gray-300 mb-3'>
-          Your existing crate history has been saved to <strong>Series 12</strong> and you should
-          be able to continue tracking there as before. (If you were not in Series 12, just 
-          pretend your current series is named Series 12 for now.)
+          Your existing crate history has been saved to <strong>Series 12</strong> and you should be
+          able to continue tracking there as before. (If you were not in Series 12, just pretend
+          your current series is named Series 12 for now.)
         </div>
         <div className='text-xs text-gray-300 mb-3'>
           Use the series selector at the top of the screen to switch between series. Your win totals
