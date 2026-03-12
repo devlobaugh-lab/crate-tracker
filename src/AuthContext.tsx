@@ -14,21 +14,22 @@ import AuthorizationService from './utils/authorization';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useDebouncedSave } from './hooks/useDebouncedSave';
 import { saveAs } from 'file-saver';
-import {
-  validateUserDataExport,
-  safeValidateUserDataExport,
-  validateFileUpload,
-} from './utils/validation';
+import { validateFileUpload, migrateToMultiSeries, ImportResult } from './utils/validation';
 import { notifications } from './utils/notifications';
 
 // Define the state interface
 interface AppState {
-  allCrates: string[];
+  series: { allCrates: string[] }[];
   config: {
     wins: number;
     gpWins: number;
   };
 }
+
+const DEFAULT_APP_STATE: AppState = {
+  series: Array.from({ length: 12 }, () => ({ allCrates: [] })),
+  config: { wins: 0, gpWins: 0 },
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [authLoading, setAuthLoading] = useState<boolean>(false);
   const [ignoreRemoteChanges, setIgnoreRemoteChanges] = useState<boolean>(false);
+  const [wasMigrated, setWasMigrated] = useState<boolean>(false);
   const [authorizationStatus, setAuthorizationStatus] = useState<
     'checking' | 'authorized' | 'unauthorized'
   >('checking');
@@ -121,26 +123,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   /**
-   * Loads user data from Firestore with fallback to default state.
-   * Creates a new user document if one doesn't exist.
-   *
-   * Business Logic:
-   * - First checks if user document exists in Firestore
-   * - If exists, returns the stored data
-   * - If not exists, creates default user data and saves it
-   * - Handles network/quota errors gracefully by returning default data
-   * - Logs all operations for debugging
-   *
-   * Edge Cases:
-   * - Network errors: Returns default data without failing
-   * - Quota exceeded: Logs error and returns default data
-   * - Document creation failure: Continues with default data
-   * - Invalid data structure: Handled by Firestore type safety
+   * Loads user data from Firestore, migrating legacy single-series data to
+   * the 12-series format if needed. If migration ran, writes the result back
+   * to Firestore immediately (one-time, non-debounced).
    *
    * @param userId - The Firebase user ID to load data for
-   * @returns Promise resolving to user application state
+   * @returns Promise resolving to { data: AppState, wasMigrated: boolean }
    */
-  async function loadUserData(userId: string): Promise<AppState> {
+  async function loadUserData(userId: string): Promise<{ data: AppState; wasMigrated: boolean }> {
     logger.log('📥 Loading user data for:', userId?.substring(0, 8) + '...');
 
     try {
@@ -149,24 +139,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (userDoc.exists()) {
         logger.log('✅ User data loaded successfully');
-        return userDoc.data() as AppState;
+        const rawData = userDoc.data();
+        const { data, migrated } = migrateToMultiSeries(rawData);
+
+        if (migrated) {
+          logger.log('🔄 Legacy data detected — migrating to multi-series format');
+          try {
+            await setDoc(userDocRef, data);
+            logger.log('✅ Migration data written back to Firestore');
+          } catch (writeError) {
+            logger.error('❌ Failed to write migration data to Firestore:', writeError);
+          }
+        }
+
+        return { data, wasMigrated: migrated };
       } else {
         logger.log('📝 Creating new user document');
-        // Create default user data if it doesn't exist
-        const defaultData: AppState = {
-          allCrates: [],
-          config: { wins: 0, gpWins: 0 },
-        };
         try {
-          await setDoc(userDocRef, defaultData);
+          await setDoc(userDocRef, DEFAULT_APP_STATE);
           logger.log('✅ Default user data created');
         } catch (createError) {
           logger.error('❌ Error creating default user data:', createError);
           logger.error('❌ Create error code:', (createError as FirestoreError).code);
           logger.error('❌ Create error message:', (createError as FirestoreError).message);
-          // Continue with default data even if save fails
         }
-        return defaultData;
+        return { data: DEFAULT_APP_STATE, wasMigrated: false };
       }
     } catch (error) {
       logger.error('❌ Error loading user data:', error);
@@ -185,11 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isNetworkError || isQuotaError) {
         logger.log('🚫 Network/quota error detected - staying online but will retry');
-        // Note: sync status is now managed by the offlineSync hook
       }
 
-      // Return default data if Firestore fails
-      return { allCrates: [], config: { wins: 0, gpWins: 0 } };
+      return { data: DEFAULT_APP_STATE, wasMigrated: false };
     }
   }
 
@@ -200,39 +195,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Firebase Authentication State Change Handler
-   *
-   * Business Logic Flow:
-   * 1. User signs in with Firebase Auth (Google OAuth)
-   * 2. Extract user email from Firebase user object
-   * 3. Check if email is authorized using AuthorizationService
-   * 4. If authorized: Load user data, set up real-time sync, enable app features
-   * 5. If unauthorized: Show unauthorized UI, allow sign-out only
-   * 6. If signed out: Clear all user data and reset to initial state
-   *
-   * Authorization Logic:
-   * - Gmail-only access control via authorizedUsers collection
-   * - Role-based permissions (admin vs normal users)
-   * - Graceful fallback for missing email or auth failures
-   *
-   * Edge Cases:
-   * - No email in Firebase user: Treated as unauthorized
-   * - Authorization service failure: Treated as unauthorized
-   * - User data load failure: Uses default empty state
-   * - Network issues during auth: Maintains current state
-   * - Multiple rapid auth changes: Handled by Firebase's internal debouncing
-   *
-   * State Management:
-   * - authorizationStatus: 'checking' | 'authorized' | 'unauthorized'
-   * - currentUser: Full user object with role and authorization status
-   * - userData: Application state loaded from Firestore
-   * - loading: Prevents UI flicker during auth transitions
    */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       logger.log('🔐 Auth state changed:', user ? 'signed in' : 'signed out');
 
       if (user) {
-        // User is signed in with Firebase - now check if they are authorized
         logger.log('🔐 Firebase auth successful, checking authorization...');
         setAuthorizationStatus('checking');
 
@@ -244,20 +212,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Check if user is authorized using our service
         const authorizationResult = await AuthorizationService.checkUserAuthorization(userEmail);
 
         if (!authorizationResult.authorized) {
           logger.log(`🚫 User ${userEmail} not authorized to use this app`);
           logger.log('Authorization result:', authorizationResult);
           setAuthorizationStatus('unauthorized');
-          // Keep currentUser so user can sign out, but don't set userData
           setCurrentUser({
             uid: user.uid,
             email: userEmail,
             displayName: user.displayName || undefined,
             photoURL: user.photoURL || undefined,
-            role: 'normal', // Default role for unauthorized users
+            role: 'normal',
             authorized: false,
           });
           setUserData(null);
@@ -269,7 +235,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           `✅ User ${userEmail} authorized as ${authorizationResult.role}, proceeding with app initialization`
         );
 
-        // User is authorized - proceed with normal flow
         setAuthorizationStatus('authorized');
         setCurrentUser({
           uid: user.uid,
@@ -280,22 +245,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           authorized: true,
         });
 
-        // Only load user data if they're authorized
         setLoading(true);
         try {
-          const data = await loadUserData(user.uid);
+          const { data, wasMigrated: migrated } = await loadUserData(user.uid);
           setUserData(data);
+          setWasMigrated(migrated);
           logger.log('✅ User data loaded successfully after authorization check');
         } catch (error) {
           logger.error('❌ Failed to load user data after authorization check:', error);
-          setUserData({ allCrates: [], config: { wins: 0, gpWins: 0 } });
+          setUserData(DEFAULT_APP_STATE);
         }
       } else {
-        // User is signed out, clear all data
         logger.log('🔐 User signed out, clearing data');
         setCurrentUser(null);
         setUserData(null);
-        setAuthorizationStatus('checking'); // Reset for new sign-in attempt (not unauthorized)
+        setWasMigrated(false);
+        setAuthorizationStatus('checking');
       }
 
       setLoading(false);
@@ -306,30 +271,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Real-time Firestore Listener for User Data Changes
-   *
-   * Business Logic:
-   * - Listens for changes to the user's document in Firestore
-   * - Updates local state when remote changes are detected
-   * - Respects ignoreRemoteChanges flag to prevent sync conflicts during bulk operations
-   * - Handles listener errors gracefully without going offline
-   *
-   * Synchronization Strategy:
-   * - Real-time updates ensure multiple devices stay in sync
-   * - ignoreRemoteChanges prevents conflicts during fast-forward operations
-   * - Listener errors are logged but don't trigger offline mode
-   * - Automatic cleanup when user signs out
-   *
-   * Edge Cases:
-   * - Document doesn't exist: Listener waits for creation
-   * - Network errors: Logged but listener remains active
-   * - Permission errors: Logged but don't affect local state
-   * - Rapid state changes: Firebase's internal debouncing prevents excessive updates
-   * - Component unmount: Listener properly cleaned up
-   *
-   * Performance Considerations:
-   * - Listener only active when user is authenticated
-   * - Minimal data transfer (only changed fields)
-   * - Automatic reconnection on network recovery
    */
   useEffect(() => {
     if (!currentUser) {
@@ -337,7 +278,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Always try to set up the listener when we have a current user
     logger.log(
       '🔄 Setting up real-time listener for user:',
       currentUser.uid.substring(0, 8) + '...'
@@ -346,10 +286,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = onSnapshot(
       userDocRef,
-      doc => {
-        if (doc.exists() && !ignoreRemoteChanges) {
+      snapshot => {
+        if (snapshot.exists() && !ignoreRemoteChanges) {
           logger.log('📡 Real-time data update received from Firebase');
-          setUserData(doc.data() as AppState);
+          const rawData = snapshot.data();
+          const { data } = migrateToMultiSeries(rawData);
+          setUserData(data);
         }
       },
       error => {
@@ -357,7 +299,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.error('❌ Listener error code:', (error as FirestoreError).code);
         logger.error('❌ Listener error message:', (error as FirestoreError).message);
 
-        // Only treat specific errors as offline-worthy
         const errorCode = (error as any)?.code;
         const isNetworkError =
           errorCode === 'unavailable' ||
@@ -368,12 +309,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorCode === 'resource-exhausted' ||
           (error as Error).message?.includes('Quota exceeded');
 
-        // For most listener errors, just log them but don't go offline
-        // Only go offline for clear network/quota issues
         if (isNetworkError || isQuotaError) {
           logger.log('🚫 Listener network/quota error - staying online but logging');
-          // Don't automatically go offline for listener errors
-          // The app can still function and retry operations
         }
       }
     );
@@ -384,22 +321,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [currentUser, ignoreRemoteChanges]);
 
-  // localStorage persistence functions defined above with useCallback
-
-  // Export user data to file using file-saver library
+  // Export user data to file (v2 format with all 12 series)
   function exportUserData(): void {
     if (!userData) {
       throw new Error('No user data to export');
     }
 
-    // Validate and structure the export data
-    const exportData = validateUserDataExport({
-      allCrates: userData.allCrates,
+    const exportData = {
+      version: 2,
+      series: userData.series,
       config: userData.config,
       exportedAt: new Date().toISOString(),
-    });
+    };
 
-    // Create blob and use file-saver to download
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const filename = `crate-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
 
@@ -408,11 +342,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logger.log('📁 User data exported successfully:', filename);
   }
 
-  // Import user data from file with validation
-  function importUserData(file: File): Promise<AppState> {
+  // Import user data from file
+  // Returns a typed union:
+  //   { type: 'full', data: ... }  — v2 file, replaces all series + config
+  //   { type: 'single', allCrates: string[] } — legacy file, imports into current series only
+  function importUserData(file: File): Promise<ImportResult> {
     return new Promise((resolve, reject) => {
       try {
-        // Validate file first
         const validatedFile = validateFileUpload(file);
 
         const reader = new FileReader();
@@ -420,32 +356,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const rawData = JSON.parse((e.target as FileReader).result as string);
 
-            // Use safe validation to get structured error handling
-            const validationResult = safeValidateUserDataExport(rawData);
-            if (!validationResult.success) {
-              reject(new Error(`Invalid file format: ${validationResult.error}`));
+            // v2 format: has version: 2 and series array
+            if (rawData.version === 2 && Array.isArray(rawData.series)) {
+              const { data } = migrateToMultiSeries(rawData);
+              logger.log('📁 v2 import: full restore', {
+                series: data.series.length,
+                wins: data.config.wins,
+              });
+              resolve({ type: 'full', data: { series: data.series, config: data.config } });
               return;
             }
 
-            // Extract the validated data
-            const { allCrates, config } = validationResult.data;
+            // Legacy format: has allCrates array (no version)
+            if (Array.isArray(rawData.allCrates)) {
+              logger.log('📁 Legacy import: single-series restore', {
+                crates: rawData.allCrates.length,
+              });
+              resolve({ type: 'single', allCrates: rawData.allCrates });
+              return;
+            }
 
-            // Create the merged data structure
-            const mergedData: AppState = {
-              allCrates,
-              config: {
-                wins: config.wins,
-                gpWins: config.gpWins,
-              },
-            };
-
-            logger.log('📁 User data imported successfully:', {
-              crates: allCrates.length,
-              wins: config.wins,
-              gpWins: config.gpWins,
-            });
-
-            resolve(mergedData);
+            reject(new Error('Invalid file format: missing series or allCrates field'));
           } catch (parseError) {
             reject(new Error('Failed to parse file: ' + (parseError as Error).message));
           }
@@ -466,6 +397,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: loading || authLoading,
     // Additional properties not in the original AuthContextType but needed by the app
     userData,
+    wasMigrated,
     saveUserData: currentUser
       ? (data: AppState) => debouncedSaveUserData(currentUser.uid, data)
       : () => {
@@ -474,7 +406,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
     loadUserData: currentUser
       ? () => loadUserData(currentUser.uid)
-      : () => ({ allCrates: [], config: { wins: 0, gpWins: 0 } }),
+      : () => ({ data: DEFAULT_APP_STATE, wasMigrated: false }),
     setIgnoreRemoteChanges,
     exportUserData,
     importUserData,

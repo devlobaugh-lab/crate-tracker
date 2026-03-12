@@ -30,11 +30,7 @@ This app uses an invite-only system for security. Admins can add users then emai
 ### For Admins: Sending Invitations
 
 1. **Authorize User in App**: Use the Admin panel to add users (this grants database access)
-2. **Send Email Manually**: The admin interface provides email content for manual sending
-
-The admin interface provides:
-- Email preview with HTML and text content
-- Copy-to-clipboard buttons for HTML/text content
+2. **Send Email Manually**: Send new user the link to the app
 
 ## Dev Environment Setup
 

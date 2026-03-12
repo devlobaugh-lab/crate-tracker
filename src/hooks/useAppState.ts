@@ -3,7 +3,7 @@ import logger from '../utils/logger';
 
 // Define the state interface
 interface AppState {
-  allCrates: string[];
+  series: { allCrates: string[] }[];
   config: {
     wins: number;
     gpWins: number;
@@ -36,6 +36,11 @@ interface UseAppStateReturn {
   setState: React.Dispatch<React.SetStateAction<AppState>>;
   isInitialized: boolean;
 }
+
+const DEFAULT_STATE: AppState = {
+  series: Array.from({ length: 12 }, () => ({ allCrates: [] })),
+  config: { wins: 0, gpWins: 0 },
+};
 
 /**
  * Application State Management Hook
@@ -110,14 +115,14 @@ export function useAppState({
         if (offlineData) {
           logger.log('✅ Found offline data:');
           logger.log('  - Wins:', offlineData.config.wins);
-          logger.log('  - Crates:', offlineData.allCrates.length);
+          logger.log('  - Series:', offlineData.series.length);
           logger.log('  - Full data:', offlineData);
 
           logger.log(
             '🔄 Initializing with offline data (wins:',
             offlineData.config.wins,
-            ', crates:',
-            offlineData.allCrates.length,
+            ', series:',
+            offlineData.series.length,
             ')'
           );
           setIsInitialized(true);
@@ -140,7 +145,7 @@ export function useAppState({
 
     logger.log('🔄 Initializing with default empty state');
     setIsInitialized(true);
-    return { allCrates: [], config: { wins: 0, gpWins: 0 } };
+    return DEFAULT_STATE;
   });
 
   // Update state when userData changes (from real-time listener)
