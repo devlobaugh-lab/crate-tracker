@@ -11,7 +11,8 @@ interface ConfigViewProps {
     gpWins: number;
   };
   allCrates: string[];
-  onChange: (config: any, resetAllCrates?: boolean, importData?: any) => void;
+  currentSeriesIndex: number;
+  onChange: (config: any, action?: any, importData?: any) => void;
   onBack: () => void;
   onAdmin: () => void;
   setIgnoreRemoteChanges: (ignore: boolean) => void;
@@ -25,12 +26,13 @@ interface LocalConfig {
 function ConfigView({
   config,
   allCrates: _allCrates,
+  currentSeriesIndex: _currentSeriesIndex,
   onChange,
   onBack,
   onAdmin,
   setIgnoreRemoteChanges,
 }: ConfigViewProps) {
-  const { currentUser, saveUserData, exportUserData, importUserData } = useAuth();
+  const { currentUser, exportUserData, importUserData } = useAuth();
   const [local, setLocal] = useState<LocalConfig>(config || { wins: 0, gpWins: 0 });
   const [importStatus, setImportStatus] = useState<string>('');
 
@@ -51,23 +53,15 @@ function ConfigView({
     // Temporarily ignore remote changes to prevent sync loop
     setIgnoreRemoteChanges(true);
 
-    // Update state immediately - this should always work
-    logger.log('🔄 Resetting state to zero');
-    onChange({ wins: 0, gpWins: 0 }, true, false);
+    // Delegate reset to App.tsx — debounced save will pick it up automatically
+    logger.log('🔄 Resetting current series to empty');
+    onChange(null, 'resetCurrentSeries', null);
 
-    // Save to Firestore (will fail if offline, but that's okay)
-    if (currentUser) {
-      const resetData = { allCrates: [], config: { wins: 0, gpWins: 0 } };
-      saveUserData(resetData).catch((error: Error) => {
-        logger.log('ℹ️ Firestore save failed (expected if offline):', error.message);
-      });
-    }
-
-    logger.log('✅ State reset completed');
-    setImportStatus('All Data reset successfully!');
+    logger.log('✅ Series reset completed');
+    setImportStatus('Current series reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
 
-    // Re-enable remote changes after a shorter delay
+    // Re-enable remote changes after a short delay
     setTimeout(() => {
       logger.log('Re-enabling remote changes');
       setIgnoreRemoteChanges(false);
@@ -91,19 +85,10 @@ function ConfigView({
 
     try {
       setImportStatus('Importing...');
-      const importedData = await importUserData(file);
+      const importResult = await importUserData(file);
 
-      // Prepare the complete state data for import
-      const completeImportData = {
-        allCrates: importedData.allCrates,
-        config: {
-          wins: importedData.config.wins || 0,
-          gpWins: importedData.config.gpWins || 0,
-        },
-      };
-
-      // Use onChange with importData parameter to restore complete state
-      onChange(null, false, completeImportData);
+      // Pass the typed union result through to App.tsx onChange
+      onChange(null, false, importResult);
 
       setImportStatus('Data imported successfully!');
       setTimeout(() => setImportStatus(''), 3000);
@@ -142,18 +127,6 @@ function ConfigView({
         />
       </label>
 
-      <label className='block mb-4'>
-        <div className='text-sm text-white font-semibold'>GP wins:</div>
-        <input
-          type='number'
-          value={local.gpWins}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setLocal({ ...local, gpWins: Number(e.target.value) })
-          }
-          className='mt-2 w-full py-2 px-3 border rounded-xl bg-gray-600 text-white border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
-        />
-      </label>
-
       <div className='flex gap-4'>
         <button
           onClick={commit}
@@ -186,7 +159,7 @@ function ConfigView({
             onClick={() => reset()}
             className='py-2 px-3 col-span-full rounded-lg bg-red-700 text-white text-sm font-semibold shadow hover:bg-red-800 transition-colors duration-200'
           >
-            Reset All Values
+            Reset Current Series
           </button>
         </div>
         {importStatus && (

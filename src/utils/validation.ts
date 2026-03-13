@@ -1,19 +1,31 @@
 import { z } from 'zod';
 
+// Per-series state schema
+export const SeriesStateSchema = z.object({
+  allCrates: z.array(z.string()).default([]),
+});
+
 // Core application state schema
 export const AppStateSchema = z.object({
-  allCrates: z.array(z.string()).default([]),
+  series: z
+    .array(SeriesStateSchema)
+    .min(12)
+    .max(12)
+    .default(() => Array.from({ length: 12 }, () => ({ allCrates: [] }))),
   config: z
     .object({
       wins: z.number().int().min(0).default(0),
       gpWins: z.number().int().min(0).default(0),
+      migrationNoticeSeen: z.boolean().optional(),
     })
     .default({ wins: 0, gpWins: 0 }),
 });
 
-// User data import/export schema (with additional metadata)
+// User data import/export schema (accepts both v1 legacy and v2 multi-series)
 export const UserDataExportSchema = z.object({
-  allCrates: z.array(z.string()).default([]),
+  version: z.number().optional(),
+  series: z.array(SeriesStateSchema).optional(),
+  allCrates: z.array(z.string()).optional(), // legacy
   config: z
     .object({
       wins: z.number().int().min(0).default(0),
@@ -90,11 +102,56 @@ export const AdminRoleChangeSchema = z
 
 // Type exports
 export type AppState = z.infer<typeof AppStateSchema>;
+export type SeriesState = z.infer<typeof SeriesStateSchema>;
 export type UserDataExport = z.infer<typeof UserDataExportSchema>;
 export type AuthorizedUser = z.infer<typeof AuthorizedUserSchema>;
 export type UserInvitation = z.infer<typeof UserInvitationSchema>;
 export type FastForwardInput = z.infer<typeof FastForwardInputSchema>;
 export type AdminRoleChange = z.infer<typeof AdminRoleChangeSchema>;
+
+// Import result union type
+export type ImportResult =
+  | { type: 'full'; data: { series: SeriesState[]; config: { wins: number; gpWins: number } } }
+  | { type: 'single'; allCrates: string[] };
+
+/**
+ * Migrates raw Firestore/localStorage data to the 12-series AppState format.
+ * - New format (series array of length 12): parsed and returned as-is.
+ * - Legacy format (allCrates array): placed at series[11], other series empty.
+ * - Unknown/empty: returns default empty 12-series state.
+ */
+export function migrateToMultiSeries(rawData: unknown): { migrated: boolean; data: AppState } {
+  const data = rawData as any;
+
+  // Already in new multi-series format
+  if (data?.series && Array.isArray(data.series) && data.series.length === 12) {
+    try {
+      return { migrated: false, data: AppStateSchema.parse(data) };
+    } catch {
+      return { migrated: false, data: AppStateSchema.parse({}) };
+    }
+  }
+
+  // Legacy single-series format: migrate allCrates → series[11]
+  if (data?.allCrates && Array.isArray(data.allCrates)) {
+    const series = Array.from({ length: 12 }, (_, i) => ({
+      allCrates: i === 11 ? (data.allCrates as string[]) : [],
+    }));
+    try {
+      const existingConfig = data.config || { wins: 0, gpWins: 0 };
+      const migrated = AppStateSchema.parse({
+        series,
+        config: { ...existingConfig, migrationNoticeSeen: false },
+      });
+      return { migrated: true, data: migrated };
+    } catch {
+      return { migrated: false, data: AppStateSchema.parse({}) };
+    }
+  }
+
+  // No recognizable data: return defaults
+  return { migrated: false, data: AppStateSchema.parse({}) };
+}
 
 // Validation helper functions
 export function validateAppState(data: unknown): AppState {

@@ -37,10 +37,21 @@ This is an offline-first React + Firebase SPA for tracking crate openings in F1 
 
 **View routing** is state-based (no router library). `App.tsx` controls a `view` state (`'intro' | 'main' | 'config' | 'admin'`) and a `showFastForward` modal flag. Views live in `src/components/views/`.
 
+**Data shape:**
+```typescript
+AppState = {
+  series: [{ allCrates: string[] }, ...], // array of 12, one per series
+  config: { wins: number, gpWins: number } // global cross-series totals
+}
+```
+`currentSeriesIndex` (0–11) is UI-only state owned by `App.tsx`, persisted to `localStorage('crate-tracker-series-index')`. The series selector in the header (a `<select>`) replaces the old `<h1>Crate Tracker</h1>`.
+
+**Migration:** `migrateToMultiSeries()` in `validation.ts` handles legacy single-series data (`allCrates` at top level → placed into `series[11]`). Called in `AuthContext.loadUserData` (Firestore), `useOfflineSync.loadOfflineData` (localStorage), and the real-time `onSnapshot` listener. When migration runs, the result is written back to Firestore immediately (non-debounced) and `wasMigrated: true` is exposed via AuthContext, which causes App.tsx to redirect `currentSeriesIndex` to 11 so users land on their data.
+
 **State management** uses decentralized custom hooks:
-- `useAppState` — core app state (crates, config), initializes from Firebase or localStorage
-- `useCrateManagement` — `addCrate()`, `undoCrate()`, `fastForwardSubmit()` mutations
-- `useCratePattern` — prediction algorithm (next 10 crates, next special crate)
+- `useAppState` — core app state (series + config), initializes from Firebase or localStorage
+- `useCrateManagement` — `addCrate()`, `undoCrate()`, `fastForwardSubmit()` mutations scoped to `currentSeriesIndex`; global config tracks cross-series win totals
+- `useCratePattern` — prediction algorithm (next 10 crates, next special crate), receives current series slice
 - `useOfflineSync` — online/offline detection, action queuing, retry logic
 - `useDebouncedSave` — debounces Firestore writes at 500ms
 
@@ -48,10 +59,16 @@ This is an offline-first React + Firebase SPA for tracking crate openings in F1 
 
 **Crate type encoding:** Single characters — `B` (Blue/Green), `G` (Gold), `P` (Platinum), `L` (Legend), `X` (GP), `?` (Unknown).
 
+**Export/import:**
+- Export: always v2 JSON (`{ version: 2, series, config, exportedAt }`).
+- Import v2 file: full restore of all 12 series + config.
+- Import legacy file (has `allCrates`, no `version`): restores into current series only; other series and config unchanged.
+- Reset: clears only `series[currentSeriesIndex].allCrates`; global config untouched.
+
 **Key utilities in `src/utils/`:**
 - `constants.ts` — `MASTER_PATTERN`, crate types, storage keys
 - `patternUtils.ts` — prediction algorithm (pattern matching)
-- `validation.ts` — Zod schemas for data validation
+- `validation.ts` — Zod schemas, `migrateToMultiSeries()`, `ImportResult` union type
 - `logger.ts` — centralized logging
 - `notifications.ts` — toast helpers
 

@@ -12,6 +12,7 @@ Data Storage and Auth services provided by Firebase
 - App will also show how many crates until a special (Plat/Legend) crate will arrive if it can determine this.
 - Has undo button to remove last crate entered (can be used multiple times)
 - Has fast forward button that allow users to quickly jump forward without manually entering crates (the app will enter the crates for you if it knows what is next)
+- Keeps track of each series crate history separately. 
 - Config page
     - Allows user to adjust their number of Wins to match game value (they won't be starting at zero)
     - Allows user to reset all data in the app and start from scratch
@@ -30,11 +31,7 @@ This app uses an invite-only system for security. Admins can add users then emai
 ### For Admins: Sending Invitations
 
 1. **Authorize User in App**: Use the Admin panel to add users (this grants database access)
-2. **Send Email Manually**: The admin interface provides email content for manual sending
-
-The admin interface provides:
-- Email preview with HTML and text content
-- Copy-to-clipboard buttons for HTML/text content
+2. **Send Email Manually**: Send new user the link to the app
 
 ## Dev Environment Setup
 

@@ -5,7 +5,7 @@ import logger from '../utils/logger';
 
 // Define the state interface
 interface AppState {
-  allCrates: string[];
+  series: { allCrates: string[] }[];
   config: {
     wins: number;
     gpWins: number;

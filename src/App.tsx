@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { AuthProvider, useAuth } from './AuthContext.tsx';
 import Login from './Login.tsx';
 import UnauthorizedAccess from './components/common/UnauthorizedAccess.tsx';
@@ -18,6 +18,7 @@ import SmallRow from './components/common/SmallRow.tsx';
 import ConfigView from './components/views/ConfigView.tsx';
 import AdminView from './components/views/AdminView.tsx';
 import IntroView from './components/views/IntroView.tsx';
+import MigrationNoticeView from './components/views/MigrationNoticeView.tsx';
 import FastForward from './components/views/FastForward.tsx';
 import CrateGrid from './components/crate/CrateGrid.tsx';
 import { useCratePattern } from './hooks/useCratePattern.ts';
@@ -27,41 +28,11 @@ import { useCrateManagement } from './hooks/useCrateManagement.ts';
 import { APP_VERSION } from './utils/constants.ts';
 import { initPerformanceMonitoring } from './utils/performance.ts';
 
+const SERIES_INDEX_STORAGE_KEY = 'crate-tracker-series-index';
+const SERIES_COUNT = 12;
+
 // AppContent component that contains the main app logic
 function AppContent() {
-  /**
-   * Main Application Component Logic
-   *
-   * Business Logic Overview:
-   * - Manages application state using custom hooks (useAppState, useCrateManagement)
-   * - Handles view navigation between intro/main/config/admin screens
-   * - Provides crate tracking functionality with prediction algorithm
-   * - Manages user authorization and authentication flow
-   *
-   * State Management Strategy:
-   * - App state centralized in useAppState hook with offline/online sync
-   * - Crate operations handled by useCrateManagement hook
-   * - View state managed locally for UI navigation
-   * - Authorization status determines available features
-   *
-   * Key Features:
-   * - Real-time crate tracking with win counting
-   * - Prediction algorithm for next crate outcomes
-   * - Fast-forward bulk operations for catch-up scenarios
-   * - Offline persistence with automatic sync
-   * - Admin panel for user management (role-based)
-   *
-   * View Logic:
-   * - Intro view: Shown for new users with no crate history
-   * - Main view: Primary crate tracking interface
-   * - Config view: Settings and data management
-   * - Admin view: User administration (admin users only)
-   *
-   * Error Handling:
-   * - Component-level error boundaries for graceful degradation
-   * - Authorization checks prevent unauthorized access
-   * - Network error handling with offline fallbacks
-   */
   const {
     currentUser,
     userData,
@@ -74,13 +45,14 @@ function AppContent() {
     clearOfflineData,
     loadOfflineData,
     authorizationStatus,
+    wasMigrated,
   } = useAuth() as any;
 
   // Use extracted custom hooks
   const setIgnoreWithTimeout = useIgnoreRemoteChanges(setIgnoreRemoteChanges);
 
   // Use the extracted app state hook
-  const { state, setState } = useAppState({
+  const { state, setState, isInitialized } = useAppState({
     currentUser,
     userData,
     isOnline,
@@ -92,11 +64,25 @@ function AppContent() {
     ignoreRemoteChanges: false, // This will be managed by the hook
   });
 
+  // Series selector state — UI only, persisted to localStorage
+  const [currentSeriesIndex, setCurrentSeriesIndex] = useState<number>(() => {
+    const saved = localStorage.getItem(SERIES_INDEX_STORAGE_KEY);
+    return saved !== null ? parseInt(saved, 10) : 0;
+  });
+
+  // Persist series index to localStorage on change
+  useEffect(() => {
+    localStorage.setItem(SERIES_INDEX_STORAGE_KEY, String(currentSeriesIndex));
+  }, [currentSeriesIndex]);
+
   // Ref for focus management when returning to main page
   const mainHeaderRef = useRef<HTMLDivElement>(null);
 
-  // Memoize expensive calculations
-  const allCrates = useMemo(() => state?.allCrates || [], [state?.allCrates]);
+  // Derive current series allCrates slice
+  const allCrates = useMemo(
+    () => state?.series?.[currentSeriesIndex]?.allCrates ?? [],
+    [state?.series, currentSeriesIndex]
+  );
 
   // Use pattern hook after state is defined
   const { lastTen, futureTen, nextSpecialCrate } = useCratePattern(allCrates);
@@ -106,12 +92,48 @@ function AppContent() {
     state,
     setState,
     setIgnoreRemoteChanges,
+    currentSeriesIndex,
   });
 
+  const isNewUser = (state?.series ?? []).every(s => s.allCrates.length === 0);
+
   const [view, setView] = useState<'intro' | 'main' | 'config' | 'admin'>(
-    (allCrates.length || 0) == 0 ? 'intro' : 'main'
+    allCrates.length === 0 && isNewUser ? 'intro' : 'main'
   );
   const [showFastForward, setShowFastForward] = useState(false);
+  const [showMigrationNotice, setShowMigrationNotice] = useState(false);
+
+  // Show migration notice once to users who were migrated to multi-series
+  useEffect(() => {
+    if (!isInitialized) return;
+    const seen = state.config.migrationNoticeSeen;
+    if (seen === false) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowMigrationNotice(true);
+      setCurrentSeriesIndex(11);
+    } else if (seen === undefined) {
+      const hasAnyData = state.series.some(s => s.allCrates.length > 0);
+      if (hasAnyData) {
+        // Backfill: already-migrated user — stamp false so dismiss writes true to Firestore
+        setState(s => ({ ...s, config: { ...s.config, migrationNoticeSeen: false } }));
+      }
+    }
+  }, [isInitialized, state.config.migrationNoticeSeen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMigrationNoticeDismiss = useCallback(() => {
+    setState(s => ({ ...s, config: { ...s.config, migrationNoticeSeen: true } }));
+    setShowMigrationNotice(false);
+  }, [setState]);
+
+  // After migration, redirect user to Series 12 where their legacy data landed
+  useEffect(() => {
+    if (wasMigrated) {
+      logger.log('🔄 Migration detected — switching to Series 12');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentSeriesIndex(11);
+      setView('main'); // migrated users always have data somewhere
+    }
+  }, [wasMigrated]);
 
   // Memoize the next special crate display text
   const specialCrateText = useMemo(() => {
@@ -134,20 +156,17 @@ function AppContent() {
   const focusMainHeader = useCallback(() => {
     if (mainHeaderRef.current) {
       mainHeaderRef.current.focus();
-      // Scroll to top as well for better UX
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
   const handleBackToMain = useCallback(() => {
     setView('main');
-    // Use setTimeout to ensure the view has changed before focusing
     setTimeout(focusMainHeader, 0);
   }, [focusMainHeader]);
 
   const handleFastForwardCancel = useCallback(() => {
     setShowFastForward(false);
-    // Use setTimeout to ensure the modal has closed before focusing
     setTimeout(focusMainHeader, 0);
   }, [focusMainHeader]);
 
@@ -155,7 +174,6 @@ function AppContent() {
     (additionalGP: number, newTotal: number) => {
       fastForwardSubmit(additionalGP, newTotal);
       setShowFastForward(false);
-      // Use setTimeout to ensure the modal has closed before focusing
       setTimeout(focusMainHeader, 0);
     },
     [fastForwardSubmit, focusMainHeader]
@@ -177,7 +195,21 @@ function AppContent() {
         className='flex items-center justify-between mb-2 rounded-xl shadow-lg bg-gray-700 px-6 py-4'
         tabIndex={-1}
       >
-        <h1 className='text-2xl font-bold text-white tracking-wide'>Crate Tracker</h1>
+        <select
+          value={currentSeriesIndex}
+          onChange={e => {
+            const newIndex = Number(e.target.value);
+            setCurrentSeriesIndex(newIndex);
+            setView('main'); // switching series never triggers intro for existing users
+          }}
+          className='text-2xl font-bold text-white bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded cursor-pointer'
+        >
+          {Array.from({ length: SERIES_COUNT }, (_, i) => (
+            <option key={i} value={i} className='bg-gray-700 text-white text-base font-normal'>
+              Series {i + 1}
+            </option>
+          ))}
+        </select>
         <div className='flex items-center gap-4'>
           <div className='text-lg text-gray-200 font-semibold'>
             Wins: {state?.config?.wins || 0}
@@ -203,7 +235,7 @@ function AppContent() {
           </div>
         }
       >
-        {view === 'main' && !showFastForward && (
+        {view === 'main' && !showFastForward && !showMigrationNotice && (
           <main>
             <ErrorBoundary
               fallback={
@@ -264,19 +296,33 @@ function AppContent() {
           >
             <ConfigView
               config={state.config}
-              allCrates={state.allCrates}
-              onChange={(cfg: any, resetAllCrates?: boolean, importData?: any) => {
-                if (importData) {
-                  // Handle import case - restore complete state
-                  setState(importData);
-                } else if (resetAllCrates) {
-                  // Handle reset case - clear all crates and reset config
-                  setState(s => ({ ...s, allCrates: [], config: { wins: 0, gpWins: 0 } }));
+              allCrates={allCrates}
+              currentSeriesIndex={currentSeriesIndex}
+              onChange={(cfg: any, action?: any, importData?: any) => {
+                if (importData && typeof importData === 'object' && 'type' in importData) {
+                  if (importData.type === 'full') {
+                    // Full v2 restore: replace all series + config
+                    setState(importData.data);
+                  } else if (importData.type === 'single') {
+                    // Legacy import: replace only current series allCrates
+                    setState((s: any) => {
+                      const newSeries = [...s.series];
+                      newSeries[currentSeriesIndex] = { allCrates: importData.allCrates };
+                      return { ...s, series: newSeries };
+                    });
+                  }
+                } else if (action === 'resetCurrentSeries') {
+                  // Reset only the current series
+                  setState((s: any) => {
+                    const newSeries = [...s.series];
+                    newSeries[currentSeriesIndex] = { allCrates: [] };
+                    return { ...s, series: newSeries };
+                  });
+                  setView('main'); // reset doesn't make user a new user
                 } else {
-                  // Handle config update case - merge new config
-                  setState(s => ({ ...s, config: { ...s.config, ...cfg } }));
+                  // Config update (wins/gpWins manual adjustment)
+                  setState((s: any) => ({ ...s, config: { ...s.config, ...cfg } }));
                 }
-                // Use longer timeout for config operations too
                 setIgnoreWithTimeout(5000);
               }}
               onBack={handleBackToMain}
@@ -294,6 +340,8 @@ function AppContent() {
             currentTotal={state.config.wins}
           />
         )}
+
+        {showMigrationNotice && <MigrationNoticeView onDismiss={handleMigrationNoticeDismiss} />}
 
         {view === 'intro' && (
           <ErrorBoundary
