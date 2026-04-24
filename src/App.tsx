@@ -327,7 +327,6 @@ function AppContent() {
               }}
               onBack={handleBackToMain}
               onAdmin={() => !showFastForward && setView('admin')}
-              setIgnoreRemoteChanges={setIgnoreRemoteChanges}
             />
           </ErrorBoundary>
         )}

@@ -15,7 +15,6 @@ interface ConfigViewProps {
   onChange: (config: any, action?: any, importData?: any) => void;
   onBack: () => void;
   onAdmin: () => void;
-  setIgnoreRemoteChanges: (ignore: boolean) => void;
 }
 
 interface LocalConfig {
@@ -30,7 +29,6 @@ function ConfigView({
   onChange,
   onBack,
   onAdmin,
-  setIgnoreRemoteChanges,
 }: ConfigViewProps) {
   const { currentUser, exportUserData, importUserData } = useAuth();
   const [local, setLocal] = useState<LocalConfig>(config || { wins: 0, gpWins: 0 });
@@ -50,22 +48,13 @@ function ConfigView({
   function reset(): void {
     logger.log('🔄 Reset button clicked');
 
-    // Temporarily ignore remote changes to prevent sync loop
-    setIgnoreRemoteChanges(true);
-
-    // Delegate reset to App.tsx — debounced save will pick it up automatically
+    // Delegate reset to App.tsx — App handles ignoreRemoteChanges via setIgnoreWithTimeout
     logger.log('🔄 Resetting current series to empty');
     onChange(null, 'resetCurrentSeries', null);
 
     logger.log('✅ Series reset completed');
     setImportStatus('Current series reset successfully!');
     setTimeout(() => setImportStatus(''), 3000);
-
-    // Re-enable remote changes after a short delay
-    setTimeout(() => {
-      logger.log('Re-enabling remote changes');
-      setIgnoreRemoteChanges(false);
-    }, 200);
   }
 
   async function handleExport(): Promise<void> {
