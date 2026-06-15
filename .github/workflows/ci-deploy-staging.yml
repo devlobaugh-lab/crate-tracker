@@ -78,7 +78,7 @@ jobs:
         path: dist/
 
     - name: Deploy to Staging Firebase
-      uses: w9jds/firebase-action@master
+      uses: w9jds/firebase-action@v15.20.0
       with:
         args: deploy --only hosting --project staging
       env:
