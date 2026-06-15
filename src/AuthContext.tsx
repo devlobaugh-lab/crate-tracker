@@ -14,6 +14,7 @@ import AuthorizationService from './utils/authorization';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import { useDebouncedSave } from './hooks/useDebouncedSave';
 import { saveAs } from 'file-saver';
+import { z } from 'zod';
 import { validateFileUpload, migrateToMultiSeries, ImportResult } from './utils/validation';
 import { notifications } from './utils/notifications';
 
@@ -369,10 +370,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             // Legacy format: has allCrates array (no version)
             if (Array.isArray(rawData.allCrates)) {
+              const parsed = z.array(z.string()).safeParse(rawData.allCrates);
+              if (!parsed.success) {
+                reject(new Error('Invalid crates data: expected array of strings'));
+                return;
+              }
               logger.log('📁 Legacy import: single-series restore', {
-                crates: rawData.allCrates.length,
+                crates: parsed.data.length,
               });
-              resolve({ type: 'single', allCrates: rawData.allCrates });
+              resolve({ type: 'single', allCrates: parsed.data });
               return;
             }
 
