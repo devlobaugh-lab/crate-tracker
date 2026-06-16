@@ -80,6 +80,6 @@ jobs:
     - name: Deploy to Staging Firebase
       uses: w9jds/firebase-action@v15.20.0
       with:
-        args: deploy --only hosting --project staging
+        args: deploy --only hosting,firestore:rules --project staging
       env:
         GCP_SA_KEY: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT }}
