@@ -80,6 +80,6 @@ jobs:
     - name: Deploy to Firebase
       uses: w9jds/firebase-action@v15.20.0
       with:
-        args: deploy --only hosting --project production
+        args: deploy --only hosting,firestore:rules --project production
       env:
         GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
