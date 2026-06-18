@@ -32,9 +32,9 @@ service cloud.firestore {
 
     // Enhanced authorized users collection - for user checking and admin management
     match /authorizedUsers/{gmailAddress} {
-      // Any authenticated user can check if they exist (for authorization logic)
-      // Admins can read any user document for management purposes
-      allow read: if isAuthenticated();
+      // Users can read only their own document; admins can read any
+      allow read: if isAuthenticated() &&
+                     (request.auth.token.email.lower() == gmailAddress || isAdmin());
 
       // Only admins can read all users (for admin panel listing)
       allow list: if isAdmin();
@@ -54,9 +54,9 @@ service cloud.firestore {
       allow create: if isAuthorized() && isAuthenticated() && request.auth.uid == userId;
     }
 
-    // For development/testing purposes, restrict to authenticated users only
+    // Test collection restricted to admins only
     match /test/{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if isAdmin();
     }
 
     // Default deny rule for any other access
